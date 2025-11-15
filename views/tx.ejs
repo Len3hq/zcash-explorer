@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Zcash Explorer - Tx <%= tx.txid %></title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js" defer></script>
+</head>
+<body class="theme-zec">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">Z</div>
+      <div class="brand-text">
+        <span class="brand-title">Zcash Explorer</span>
+        <span class="brand-subtitle">Transaction <%= tx.txid %></span>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab <%= activeTab === 'home' ? 'nav-tab-active' : '' %>">Overview</a>
+      <a href="/blocks" class="nav-tab <%= activeTab === 'blocks' ? 'nav-tab-active' : '' %>">Blocks</a>
+      <a href="/txs" class="nav-tab <%= activeTab === 'txs' ? 'nav-tab-active' : '' %>">Transactions</a>
+    </nav>
+    <div class="topbar-actions">
+      <a href="/" class="back-link">&larr; Back to home</a>
+      <button type="button" class="theme-toggle" data-theme-toggle>
+        <span class="theme-toggle-icon"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container wide-layout">
+    <section class="card">
+      <div class="page-header">
+        <h1 class="page-title">Transaction</h1>
+        <span class="chip">
+          <span class="badge-dot"></span>
+          <span class="chip-label">TxID</span>
+        </span>
+      </div>
+
+      <div class="key-value-grid">
+        <div>
+          <div class="key-label">TxID</div>
+          <div class="key-value kv-mono hash"><%= tx.txid %></div>
+        </div>
+        <div>
+          <div class="key-label">Version</div>
+          <div class="key-value"><%= tx.version %></div>
+        </div>
+        <div>
+          <div class="key-label">Lock Time</div>
+          <div class="key-value"><%= tx.locktime %></div>
+        </div>
+        <div>
+          <div class="key-label">Inputs</div>
+          <div class="key-value"><%= decoded.inputCount %> (<%= decoded.inputTotal.toFixed(8) %> ZEC)</div>
+        </div>
+        <div>
+          <div class="key-label">Outputs</div>
+          <div class="key-value"><%= decoded.outputCount %> (<%= decoded.totalOutput.toFixed(8) %> ZEC)</div>
+        </div>
+        <div>
+          <div class="key-label">Type</div>
+          <div class="key-value"><%= decoded.isCoinbase ? 'Coinbase' : ((tx.vjoinsplit && tx.vjoinsplit.length) || (typeof tx.valueBalance === 'number' && tx.valueBalance !== 0) ? 'Shielded' : 'Transparent') %></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card mt-lg">
+      <div class="card-header">
+        <div class="section-title">Decoded Outputs</div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Address</th>
+              <th>Type</th>
+              <th>Value (ZEC)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% decoded.outputs.forEach(function(o) { %>
+              <tr>
+                <td><%= o.n %></td>
+                <td class="hash">
+                  <% if (o.addresses && o.addresses.length) { %>
+                    <%= o.addresses[0] %>
+                  <% } else { %>
+                    <span class="muted">(no address)</span>
+                  <% } %>
+                </td>
+                <td><%= o.type || 'unknown' %></td>
+                <td><%= typeof o.value === 'number' ? o.value.toFixed(8) : '0.00000000' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card mt-lg">
+      <div class="card-header">
+        <div class="section-title">Inputs (vin)</div>
+      </div>
+      <pre><%= JSON.stringify(tx.vin, null, 2) %></pre>
+    </section>
+
+    <section class="card mt-lg">
+      <div class="card-header">
+        <div class="section-title">Outputs (vout)</div>
+      </div>
+      <pre><%= JSON.stringify(tx.vout, null, 2) %></pre>
+    </section>
+
+    <% if (tx.vjoinsplit && tx.vjoinsplit.length) { %>
+      <section class="card mt-lg">
+        <div class="card-header">
+          <div class="section-title">Shielded JoinSplits (vjoinsplit)</div>
+        </div>
+        <pre><%= JSON.stringify(tx.vjoinsplit, null, 2) %></pre>
+      </section>
+    <% } %>
+
+    <% if (tx.valueBalance !== undefined) { %>
+      <section class="card mt-lg">
+        <div class="card-header">
+          <div class="section-title">Value Balance</div>
+        </div>
+        <pre><%= JSON.stringify(tx.valueBalance, null, 2) %></pre>
+      </section>
+    <% } %>
+
+    <section class="card mt-lg">
+      <div class="card-header">
+        <div class="section-title">Raw JSON</div>
+      </div>
+      <pre><%= JSON.stringify(tx, null, 2) %></pre>
+    </section>
+  </main>
+</body>
+</html>

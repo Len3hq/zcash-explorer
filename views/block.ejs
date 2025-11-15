@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Zcash Explorer - Block <%= block.height || block.hash %></title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js" defer></script>
+</head>
+<body class="theme-zec">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">Z</div>
+      <div class="brand-text">
+        <span class="brand-title">Zcash Explorer</span>
+        <span class="brand-subtitle">Block <%= block.height || block.hash %></span>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab <%= activeTab === 'home' ? 'nav-tab-active' : '' %>">Overview</a>
+      <a href="/blocks" class="nav-tab <%= activeTab === 'blocks' ? 'nav-tab-active' : '' %>">Blocks</a>
+      <a href="/txs" class="nav-tab <%= activeTab === 'txs' ? 'nav-tab-active' : '' %>">Transactions</a>
+    </nav>
+    <div class="topbar-actions">
+      <a href="/" class="back-link">&larr; Back to home</a>
+      <button type="button" class="theme-toggle" data-theme-toggle>
+        <span class="theme-toggle-icon"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container wide-layout">
+    <section class="card">
+      <div class="page-header">
+        <h1 class="page-title">Block #<%= summary.height %></h1>
+        <div class="chip">
+          <span class="badge-dot"></span>
+          <span class="chip-label">Height <%= summary.height %></span>
+        </div>
+      </div>
+
+      <div class="key-value-grid">
+        <div>
+          <div class="key-label">Hash</div>
+          <div class="key-value kv-mono hash"><%= summary.hash %></div>
+        </div>
+        <div>
+          <div class="key-label">Mined on</div>
+          <div class="key-value">
+            <span><%= summary.minedOn %></span>
+            <span class="muted"> (<%= summary.minedAgo %>)</span>
+          </div>
+        </div>
+        <div>
+          <div class="key-label">Miner</div>
+          <div class="key-value kv-mono"><%= summary.miner || 'Unknown' %></div>
+        </div>
+        <div>
+          <div class="key-label">Transaction count</div>
+          <div class="key-value"><%= summary.txCount %></div>
+        </div>
+        <div>
+          <div class="key-label">Input count</div>
+          <div class="key-value"><%= summary.inputCount %></div>
+        </div>
+        <div>
+          <div class="key-label">Output count</div>
+          <div class="key-value"><%= summary.outputCount %></div>
+        </div>
+        <div>
+          <div class="key-label">Input total</div>
+          <div class="key-value"><%= summary.inputTotal.toFixed(8) %> ZEC</div>
+        </div>
+        <div>
+          <div class="key-label">Output total</div>
+          <div class="key-value"><%= summary.outputTotal.toFixed(8) %> ZEC</div>
+        </div>
+        <div>
+          <div class="key-label">Previous Block</div>
+          <div class="key-value kv-mono">
+            <% if (block.previousblockhash) { %>
+              <a href="/block/<%= block.previousblockhash %>"><%= block.previousblockhash %></a>
+            <% } else { %>
+              <span class="muted">N/A</span>
+            <% } %>
+          </div>
+        </div>
+        <div>
+          <div class="key-label">Next Block</div>
+          <div class="key-value kv-mono">
+            <% if (block.nextblockhash) { %>
+              <a href="/block/<%= block.nextblockhash %>"><%= block.nextblockhash %></a>
+            <% } else { %>
+              <span class="muted">Tip</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card mt-lg">
+      <div class="card-header">
+        <div class="section-title">Transactions</div>
+        <span class="card-subtext">Click a transaction to view full details</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>TxID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (Array.isArray(block.tx)) { %>
+              <% block.tx.forEach(function(tx) { %>
+                <tr>
+                  <td class="hash">
+                    <% if (typeof tx === 'string') { %>
+                      <a href="/tx/<%= tx %>"><%= tx %></a>
+                    <% } else { %>
+                      <a href="/tx/<%= tx.txid %>"><%= tx.txid %></a>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

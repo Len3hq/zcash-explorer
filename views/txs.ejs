@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Zcash Explorer - Transactions</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js" defer></script>
+</head>
+<body class="theme-zec">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">Z</div>
+      <div class="brand-text">
+        <span class="brand-title">Zcash Explorer</span>
+        <span class="brand-subtitle">Recent transactions</span>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab <%= activeTab === 'home' ? 'nav-tab-active' : '' %>">Overview</a>
+      <a href="/blocks" class="nav-tab <%= activeTab === 'blocks' ? 'nav-tab-active' : '' %>">Blocks</a>
+      <a href="/txs" class="nav-tab <%= activeTab === 'txs' ? 'nav-tab-active' : '' %>">Transactions</a>
+    </nav>
+    <div class="topbar-actions">
+      <a href="/" class="back-link">Home</a>
+      <button type="button" class="theme-toggle" data-theme-toggle>
+        <span class="theme-toggle-icon"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card table-card wide-layout">
+      <div class="card-header">
+        <div class="section-title">Recent Transactions</div>
+        <span class="card-subtext">Up to 50 recent transactions from the latest blocks</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>TxID</th>
+              <th>Block</th>
+              <th>Height</th>
+              <th>Time (UTC)</th>
+              <th>Inputs</th>
+              <th>Outputs</th>
+              <th>Output (ZEC)</th>
+              <th>Tx Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% txs.forEach(function(row) { %>
+              <tr>
+                <td class="hash">
+                  <a href="/tx/<%= row.txid %>"><%= row.txid %></a>
+                </td>
+                <td class="hash">
+                  <a href="/block/<%= row.blockHash %>"><%= row.blockHash %></a>
+                </td>
+                <td>
+                  <a href="/block/<%= row.blockHash %>"><%= row.height %></a>
+                </td>
+                <td class="timestamp"><%= new Date(row.time * 1000).toISOString() %></td>
+                <td><%= row.inputsCount != null ? row.inputsCount : '–' %></td>
+                <td><%= row.outputsCount != null ? row.outputsCount : '–' %></td>
+                <td>
+                  <% if (typeof row.outputTotal === 'number') { %>
+                    <%= row.outputTotal.toFixed(8) %>
+                  <% } else { %>
+                    <span class="muted">&ndash;</span>
+                  <% } %>
+                </td>
+                <td><%= row.txType %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

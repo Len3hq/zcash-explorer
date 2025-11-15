@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Zcash Explorer - Blocks</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js" defer></script>
+</head>
+<body class="theme-zec">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">Z</div>
+      <div class="brand-text">
+        <span class="brand-title">Zcash Explorer</span>
+        <span class="brand-subtitle">Recent blocks</span>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="/" class="nav-tab <%= activeTab === 'home' ? 'nav-tab-active' : '' %>">Overview</a>
+      <a href="/blocks" class="nav-tab <%= activeTab === 'blocks' ? 'nav-tab-active' : '' %>">Blocks</a>
+      <a href="/txs" class="nav-tab <%= activeTab === 'txs' ? 'nav-tab-active' : '' %>">Transactions</a>
+    </nav>
+    <div class="topbar-actions">
+      <a href="/" class="back-link">Home</a>
+      <button type="button" class="theme-toggle" data-theme-toggle>
+        <span class="theme-toggle-icon"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card table-card wide-layout">
+      <div class="card-header">
+        <div class="section-title">Recent Blocks</div>
+        <span class="card-subtext">Last <%= blocks.length %> blocks on the <%= info.chain %> chain</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Height</th>
+              <th>Hash</th>
+              <th>Mined on</th>
+              <th>Txns</th>
+              <th>Size</th>
+              <th>Output (ZEC)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% blocks.forEach(function(block) { %>
+              <tr>
+                <td>
+                  <a href="/block/<%= block.hash %>"><%= block.height %></a>
+                </td>
+                <td class="hash">
+                  <a href="/block/<%= block.hash %>"><%= block.hash %></a>
+                </td>
+                <td class="timestamp"><%= new Date(block.time * 1000).toISOString() %></td>
+                <td>
+                  <span class="tx-count-pill"><span>&bull;</span><span><%= block.txCount %></span></span>
+                </td>
+                <td>
+                  <% if (block.size) { %>
+                    <%= (block.size / 1024).toFixed(2) %> KB
+                  <% } else { %>
+                    <span class="muted">&ndash;</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (typeof block.outputTotal === 'number') { %>
+                    <%= block.outputTotal.toFixed(8) %>
+                  <% } else { %>
+                    <span class="muted">&ndash;</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
