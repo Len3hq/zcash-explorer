@@ -1,102 +1,77 @@
 # Zcash Explorer
 
-A minimal blockchain explorer for Zcash that shows block and transaction details, similar to a standard block explorer.
+A lightweight Zcash blockchain explorer with a modern UI, live stats, and basic block/transaction views.
 
-## What APIs / services this uses
+## Data source
 
-This explorer talks directly to a **local Zcash full node** (`zcashd`) via its **JSON-RPC interface**. That means:
+This explorer uses a **Zcash JSON-RPC endpoint**. You can point it at:
 
-- No third-party blockchain API is required for core functionality.
-- All chain data comes from your own node.
+- A hosted provider such as **GetBlock** (recommended for quick setup), or
+- Your own `zcashd` node exposing the standard JSON-RPC methods.
 
-Concretely, it uses these `zcashd` RPC methods (Bitcoin-style JSON-RPC):
+The backend calls these RPC methods:
 
-- `getblockchaininfo` – basic chain status (height, best block hash, sync progress)
-- `getbestblockhash` – hash of the tip block (helper)
-- `getblockhash <height>` – resolve a block height to a block hash
-- `getblock <hash> [verbosity]` – fetch block metadata and list of transactions
-- `getrawtransaction <txid> 1` – fetch verbose transaction details by ID
-
-If you prefer a hosted API (e.g. Blockchair, SoChain, etc.), you can adapt `zcashRpcClient.js` to call those instead, but this project is wired for `zcashd` out of the box.
+- `getblockchaininfo`
+- `getbestblockhash`
+- `getblockhash` (by height)
+- `getblock` (with verbosity for transactions)
+- `getrawtransaction` (verbose)
+- `getnetworkhashps` (optional, for stats)
 
 ## Prerequisites
 
-1. **Node.js** (>= 14 recommended)
-2. **Zcash full node (`zcashd`)** running and fully synced, with RPC enabled.
+- **Node.js** ≥ 14
+- A Zcash RPC endpoint URL (e.g. from GetBlock or your own `zcashd` node)
 
-### Example `zcash.conf`
+## Setup
 
-Typically in `~/.zcash/zcash.conf` (or platform equivalent):
-
-```ini
-rpcuser=zcashrpcuser
-rpcpassword=some-strong-password
-rpcallowip=127.0.0.1
-rpcport=8232
-server=1
-addnode=mainnet.z.cash
-```
-
-Restart `zcashd` after editing the config.
-
-## Project setup
-
-From the project directory:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Create a `.env` file in the project root with your RPC credentials:
+Create a `.env` file in the project root:
 
 ```bash
-ZCASH_RPC_URL=http://127.0.0.1:8232
-ZCASH_RPC_USER=zcashrpcuser
-ZCASH_RPC_PASSWORD=some-strong-password
+# Required – Zcash RPC endpoint (GetBlock URL or local zcashd URL)
+ZCASH_RPC_URL=https://YOUR-ZCASH-ENDPOINT-URL
+
+# Optional – API key header (only if your provider uses it)
+# ZCASH_GETBLOCK_API_KEY=your_getblock_api_key
+
 PORT=3000
 ```
 
-> Make sure `ZCASH_RPC_USER` and `ZCASH_RPC_PASSWORD` match the values in your `zcash.conf`.
+For GetBlock, paste the full Zcash endpoint URL into `ZCASH_RPC_URL`. If GetBlock gives you a separate API key, put it in `ZCASH_GETBLOCK_API_KEY`; otherwise you can leave it unset.
 
-## Running the explorer
+## Running
 
 ```bash
 node server.js
 ```
 
-Then open:
+Open:
 
-- http://localhost:3000
+- `http://localhost:3000`
 
-## Features
+## Main routes / UI
 
-- **Home page**
-  - Displays chain info (`getblockchaininfo`)
-  - Shows a table of the latest 10 blocks (height, hash, time, tx count)
-- **Search**
-  - Search box accepts:
-    - Block **height** (number)
-    - Block **hash**
-    - **Transaction ID** (txid)
-- **Block page** (`/block/:hash`)
-  - Basic block metadata (hash, height, timestamp, prev/next block links)
-  - List of transactions in the block (links to tx detail pages)
-- **Transaction page** (`/tx/:txid`)
-  - TxID, version, locktime
-  - Full `vin` and `vout` arrays
-  - Zcash-specific fields where available (e.g. `vjoinsplit`, `valueBalance`)
-  - Full raw transaction JSON
-
-## Adapting to third-party APIs
-
-If you do not want to run `zcashd`, you can plug in a third-party Zcash API instead of JSON-RPC by modifying `zcashRpcClient.js`:
-
-- Replace the `rpcCall` function with HTTP calls to your chosen provider (e.g. Blockchair, SoChain, etc.).
-- Implement wrappers that provide the same interface:
-  - `getBlockchainInfo()`
-  - `getBestBlockHash()` (optional helper)
-  - `getBlockHash(height)`
-  - `getBlock(blockHash)`
-  - `getRawTransaction(txid, verbose)`
-
-As long as those functions return data shaped similarly to `zcashd` RPC responses, the rest of the app will continue to work.
+- `GET /` – **Overview**
+  - Chain info (height, verification %, best block hash)
+  - Live stats: approximate TPS, blocks/hour, difficulty (auto-refresh every 10s)
+  - Latest blocks table
+  - Global search (block height/hash or txid)
+  - Light/dark theme toggle
+- `GET /blocks` – **Blocks list**
+  - Recent blocks with columns: `Height`, `Hash`, `Mined on`, `Txns`, `Size`, `Output (ZEC)`
+- `GET /block/:hash` – **Block detail**
+  - Hash, mined time (with “X minutes ago”), miner address (when derivable)
+  - Transaction count, input/output counts, input/output totals (ZEC)
+  - Links to previous/next block
+- `GET /txs` – **Transactions list**
+  - Recent transactions with columns: `TxID`, `Block`, `Height`, `Time`, `Inputs`, `Outputs`, `Output (ZEC)`, `Tx Type`
+- `GET /tx/:txid` – **Transaction detail**
+  - Summary: txid, version, locktime, input/output counts and totals (ZEC), tx type (coinbase/shielded/transparent)
+  - Decoded outputs table (address, type, value)
+  - Raw `vin`, `vout`, shielded fields, and full transaction JSON for inspection
