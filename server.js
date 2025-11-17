@@ -4,7 +4,6 @@ require('dotenv').config();
 
 const {
   getBlockchainInfo,
-  getBestBlockHash,
   getBlockHash,
   getBlock,
   getRawTransaction,
@@ -19,50 +18,6 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
-
-// Lightweight JSON stats endpoint for live dashboard updates
-app.get('/api/summary', async (req, res) => {
-  try {
-    const info = await getBlockchainInfo();
-    const bestHeight = info.blocks;
-    const recentBlocks = await fetchRecentBlocks(bestHeight, 20);
-
-    let txTotal = 0;
-    let timeSpan = 0;
-    if (recentBlocks.length >= 2) {
-      const newest = recentBlocks[0];
-      const oldest = recentBlocks[recentBlocks.length - 1];
-      txTotal = recentBlocks.reduce((sum, b) => sum + (b.txCount || 0), 0);
-      timeSpan = Math.max(newest.time - oldest.time, 1);
-    }
-
-    const approxTps = timeSpan > 0 ? txTotal / timeSpan : 0;
-    const blocksPerHour = timeSpan > 0 ? (recentBlocks.length * 3600) / timeSpan : 0;
-
-    let networkHash = null;
-    try {
-      networkHash = await getNetworkHashPs(120, -1);
-    } catch (e) {
-      // ignore
-    }
-
-    res.json({
-      height: bestHeight,
-      chain: info.chain,
-      bestblockhash: info.bestblockhash,
-      verificationprogress: info.verificationprogress,
-      difficulty: info.difficulty,
-      size_on_disk: info.size_on_disk,
-      approxTps,
-      blocksPerHour,
-      networkHash,
-      lastBlockTime: recentBlocks[0] ? recentBlocks[0].time : null,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch summary stats' });
-  }
-});
 
 // helper to fetch a window of recent blocks (simple, RPC-heavy but OK for demo)
 async function fetchRecentBlocks(startHeight, count) {
@@ -161,33 +116,41 @@ function formatRelativeTime(epochSeconds) {
 }
 
 async function computeBlockSummary(block) {
-  const txIds = Array.isArray(block.tx)
-    ? (typeof block.tx[0] === 'string' ? block.tx : block.tx.map(t => t.txid))
-    : [];
+  const txArray = Array.isArray(block.tx) ? block.tx : [];
+  const hasVerboseTx = txArray.length > 0 && typeof txArray[0] !== 'string';
 
-  const decodedList = await Promise.all(txIds.map(id => decodeTransactionWithPrevouts(id)));
-
+  let txCount = txArray.length;
   let inputCount = 0;
   let outputCount = 0;
-  let inputTotal = 0;
+  let inputTotal = 0; // we do not recompute exact input totals here to avoid extra RPC calls
   let outputTotal = 0;
-
-  for (const d of decodedList) {
-    inputCount += d.inputCount;
-    outputCount += d.outputCount;
-    inputTotal += d.inputTotal;
-    outputTotal += d.outputTotal;
-  }
-
-  const coinbase = decodedList[0] && decodedList[0].tx;
   let miner = null;
-  if (coinbase && Array.isArray(coinbase.vout) && coinbase.vout.length > 0) {
-    const first = coinbase.vout[0];
-    if (first.scriptPubKey) {
-      if (Array.isArray(first.scriptPubKey.addresses) && first.scriptPubKey.addresses.length > 0) {
-        miner = first.scriptPubKey.addresses[0];
-      } else if (first.scriptPubKey.address) {
-        miner = first.scriptPubKey.address;
+
+  if (hasVerboseTx) {
+    for (let i = 0; i < txArray.length; i += 1) {
+      const tx = txArray[i];
+      const vins = Array.isArray(tx.vin) ? tx.vin : [];
+      const vouts = Array.isArray(tx.vout) ? tx.vout : [];
+
+      inputCount += vins.length;
+      outputCount += vouts.length;
+
+      for (const vout of vouts) {
+        if (typeof vout.value === 'number') {
+          outputTotal += vout.value;
+        }
+      }
+
+      // Use the first transaction's first output as the miner address (coinbase)
+      if (i === 0 && vouts.length > 0 && !miner) {
+        const first = vouts[0];
+        if (first.scriptPubKey) {
+          if (Array.isArray(first.scriptPubKey.addresses) && first.scriptPubKey.addresses.length > 0) {
+            miner = first.scriptPubKey.addresses[0];
+          } else if (first.scriptPubKey.address) {
+            miner = first.scriptPubKey.address;
+          }
+        }
       }
     }
   }
@@ -201,7 +164,7 @@ async function computeBlockSummary(block) {
   return {
     hash: block.hash,
     height: block.height,
-    txCount: txIds.length,
+    txCount,
     inputCount,
     outputCount,
     inputTotal,
@@ -241,6 +204,22 @@ app.get('/', async (req, res) => {
       // optional; ignore if RPC not available
     }
 
+    let poolHoldings = null;
+    if (Array.isArray(info.valuePools) && info.valuePools.length) {
+      const pools = info.valuePools
+        .filter(p => p && typeof p.chainValue === 'number')
+        .map(p => ({
+          id: p.id || p.poolName || 'Pool',
+          chainValue: p.chainValue,
+          monitored: !!p.monitored,
+        }));
+
+      if (pools.length) {
+        const totalShielded = pools.reduce((sum, p) => sum + (p.chainValue || 0), 0);
+        poolHoldings = { pools, totalShielded };
+      }
+    }
+
     // latest 10 blocks to display
     const blocks = recentBlocks.slice(0, 10).map(b => ({
       height: b.height,
@@ -256,6 +235,7 @@ app.get('/', async (req, res) => {
         approxTps,
         blocksPerHour,
         networkHash,
+        poolHoldings,
       },
       activeTab: 'home',
     });
@@ -297,11 +277,26 @@ app.post('/search', async (req, res) => {
   return res.redirect(`/tx/${query}`);
 });
 
-// Block detail page
+// Block detail page (accepts either block height or block hash)
 app.get('/block/:id', async (req, res) => {
-  const { id } = req.params; // block hash
+  const { id } = req.params;
   try {
-    const block = await getBlock(id);
+    let block;
+
+    if (/^\d+$/.test(id)) {
+      // Numeric: treat as block height
+      const height = parseInt(id, 10);
+      try {
+        const hash = await getBlockHash(height);
+        block = await getBlock(hash);
+      } catch (e) {
+        return res.status(404).send('Block not found');
+      }
+    } else {
+      // Non-numeric: treat as block hash
+      block = await getBlock(id);
+    }
+
     if (!block) {
       return res.status(404).send('Block not found');
     }
@@ -354,55 +349,62 @@ app.get('/txs', async (req, res) => {
     const txs = [];
     for (const b of recentBlocks) {
       if (!Array.isArray(b.raw.tx)) continue;
-      for (const txid of b.raw.tx) {
-        if (typeof txid === 'string') {
-          txs.push({
-            txid,
-            blockHash: b.hash,
-            height: b.height,
-            time: b.time,
-          });
-        }
-      }
-    }
 
-    // Limit to a reasonable number and enrich with IO counts
-    const limited = txs.slice(0, 50);
-    const detailed = [];
-    for (const row of limited) {
-      try {
-        const tx = await getRawTransaction(row.txid, true);
-        const isCoinbase = Array.isArray(tx.vin) && tx.vin.length > 0 && !!tx.vin[0].coinbase;
-        const inputsCount = Array.isArray(tx.vin) ? tx.vin.length : 0;
-        const outputsCount = Array.isArray(tx.vout) ? tx.vout.length : 0;
-        let outputTotal = 0;
-        if (Array.isArray(tx.vout)) {
-          for (const v of tx.vout) {
-            if (typeof v.value === 'number') outputTotal += v.value;
+      const isVerbose = b.raw.tx.length > 0 && typeof b.raw.tx[0] !== 'string';
+
+      for (const entry of b.raw.tx) {
+        let txid;
+        let inputsCount = null;
+        let outputsCount = null;
+        let outputTotal = null;
+        let txType = 'Unknown';
+
+        if (isVerbose && entry && typeof entry === 'object') {
+          txid = entry.txid;
+
+          const vins = Array.isArray(entry.vin) ? entry.vin : [];
+          const vouts = Array.isArray(entry.vout) ? entry.vout : [];
+
+          inputsCount = vins.length;
+          outputsCount = vouts.length;
+
+          let sum = 0;
+          for (const v of vouts) {
+            if (typeof v.value === 'number') sum += v.value;
           }
-        }
-        const txType = isCoinbase
-          ? 'Coinbase'
-          : (tx.vjoinsplit && tx.vjoinsplit.length) || (typeof tx.valueBalance === 'number' && tx.valueBalance !== 0)
-          ? 'Shielded'
-          : 'Transparent';
+          outputTotal = sum;
 
-        detailed.push({
-          ...row,
+          const isCoinbase = vins.length > 0 && !!(vins[0] && vins[0].coinbase);
+          txType = isCoinbase
+            ? 'Coinbase'
+            : (entry.vjoinsplit && entry.vjoinsplit.length) || (typeof entry.valueBalance === 'number' && entry.valueBalance !== 0)
+            ? 'Shielded'
+            : 'Transparent';
+        } else if (typeof entry === 'string') {
+          txid = entry;
+        }
+
+        if (!txid) continue;
+
+        txs.push({
+          txid,
+          blockHash: b.hash,
+          height: b.height,
+          time: b.time,
           inputsCount,
           outputsCount,
           outputTotal,
           txType,
         });
-      } catch (e) {
-        detailed.push({ ...row, inputsCount: null, outputsCount: null, outputTotal: null, txType: 'Unknown' });
       }
     }
+
+    const limited = txs.slice(0, 50);
 
     res.render('txs', {
       info,
       activeTab: 'txs',
-      txs: detailed,
+      txs: limited,
     });
   } catch (err) {
     console.error(err);

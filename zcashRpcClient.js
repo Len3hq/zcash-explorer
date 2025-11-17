@@ -59,10 +59,6 @@ async function getBlockchainInfo() {
   return rpcCall('getblockchaininfo');
 }
 
-async function getBestBlockHash() {
-  return rpcCall('getbestblockhash');
-}
-
 async function getBlockHash(height) {
   return rpcCall('getblockhash', [height]);
 }
@@ -87,7 +83,6 @@ async function getNetworkHashPs(blocks = 120, height = -1) {
 
 module.exports = {
   getBlockchainInfo,
-  getBestBlockHash,
   getBlockHash,
   getBlock,
   getRawTransaction,

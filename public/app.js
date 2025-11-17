@@ -28,46 +28,45 @@
     }
   }
 
-  async function fetchSummary() {
-    try {
-      const res = await fetch('/api/summary');
-      if (!res.ok) return;
-      const data = await res.json();
+  function initRawModal() {
+    const modal = document.querySelector('[data-raw-modal]');
+    if (!modal) return;
 
-      const heightEl = document.getElementById('stat-height');
-      const verifEl = document.getElementById('stat-verification');
-      const bestEl = document.getElementById('stat-bestblock');
-      const tpsEl = document.getElementById('stat-tps');
-      const blockRateEl = document.getElementById('stat-blockrate');
+    // Always start hidden on page load
+    modal.setAttribute('hidden', 'hidden');
+    document.body.classList.remove('modal-open');
 
-      if (heightEl && typeof data.height === 'number') {
-        heightEl.textContent = data.height.toLocaleString();
-      }
-      if (verifEl && typeof data.verificationprogress === 'number') {
-        verifEl.textContent = (data.verificationprogress * 100).toFixed(2) + '%';
-      }
-      if (bestEl && data.bestblockhash) {
-        bestEl.textContent = data.bestblockhash;
-      }
-      if (tpsEl && typeof data.approxTps === 'number') {
-        tpsEl.textContent = data.approxTps.toFixed(2) + ' tx/s';
-      }
-      if (blockRateEl && typeof data.blocksPerHour === 'number') {
-        blockRateEl.textContent = data.blocksPerHour.toFixed(2) + ' blocks/hr';
-      }
-    } catch (e) {
-      // ignore errors for UI polling
-    }
-  }
+    const openBtn = document.querySelector('[data-raw-modal-open]');
+    const closeBtn = modal.querySelector('[data-raw-modal-close]');
+    const content = modal.querySelector('.modal');
 
-  function initLiveStats() {
-    if (!document.getElementById('stat-height')) return; // only on home
-    fetchSummary();
-    setInterval(fetchSummary, 10000); // every 10s
+    const open = () => {
+      modal.removeAttribute('hidden');
+      document.body.classList.add('modal-open');
+    };
+
+    const close = () => {
+      modal.setAttribute('hidden', 'hidden');
+      document.body.classList.remove('modal-open');
+    };
+
+    if (openBtn) openBtn.addEventListener('click', open);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+
+    modal.addEventListener('click', (e) => {
+      // Close when clicking anywhere outside the modal content
+      if (!content.contains(e.target)) close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.hasAttribute('hidden')) {
+        close();
+      }
+    });
   }
 
   window.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    initLiveStats();
+    initRawModal();
   });
 })();
