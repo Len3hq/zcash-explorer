@@ -3,6 +3,10 @@ import { fetchRecentBlocks } from '@/lib/utils';
 import StatsCard, { StatItem } from '@/components/StatsCard';
 import BlocksTable from '@/components/BlocksTable';
 
+import PriceChart from '@/components/PriceChart';
+
+import CoinDetails from '@/components/CoinDetails';
+
 export default async function Home() {
   const info = await getBlockchainInfo();
   const bestHeight = info.blocks;
@@ -55,6 +59,15 @@ export default async function Home() {
 
   return (
     <main className="container wide-layout">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div>
+          <PriceChart />
+        </div>
+        <div>
+          <CoinDetails />
+        </div>
+      </section>
+
       <section className="grid-2">
         <StatsCard title="Network Overview" badge={{ dot: true, text: `${info.chain} chain` }}>
           <div>
