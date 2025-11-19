@@ -1,6 +1,6 @@
 # Zcash Explorer
 
-A lightweight Zcash blockchain explorer with a modern UI, live stats, and basic block/transaction views.
+A lightweight Zcash blockchain explorer built with **Next.js 14**, featuring a modern UI, live stats, and comprehensive block/transaction views.
 
 ## Data source
 
@@ -20,7 +20,7 @@ The backend calls these RPC methods:
 
 ## Prerequisites
 
-- **Node.js** ≥ 14
+- **Node.js** ≥ 18
 - A Zcash RPC endpoint URL (e.g. from GetBlock or your own `zcashd` node)
 
 ## Setup
@@ -47,8 +47,15 @@ For GetBlock, paste the full Zcash endpoint URL into `ZCASH_RPC_URL`. If GetBloc
 
 ## Running
 
+Development mode:
 ```bash
-node server.js
+npm run dev
+```
+
+Production build:
+```bash
+npm run build
+npm start
 ```
 
 Open:
