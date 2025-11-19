@@ -54,7 +54,7 @@ export default async function Home() {
   }));
 
   return (
-    <main className="container">
+    <main className="container wide-layout">
       <section className="grid-2">
         <StatsCard title="Network Overview" badge={{ dot: true, text: `${info.chain} chain` }}>
           <div>

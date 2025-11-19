@@ -38,7 +38,7 @@ export default function RawModal({ data }: RawModalProps) {
             className="button-secondary"
             onClick={() => setIsOpen(true)}
           >
-            View raw JSON
+            View raw tx
           </button>
         </div>
       </section>
@@ -52,15 +52,15 @@ export default function RawModal({ data }: RawModalProps) {
             }
           }}
         >
-          <div className="modal">
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="raw-json-title">
             <div className="modal-header">
-              <div className="section-title">Raw JSON</div>
+              <div className="section-title" id="raw-json-title">Raw transaction (JSON)</div>
               <div className="modal-actions">
                 <button
                   type="button"
                   className="modal-close"
                   onClick={() => setIsOpen(false)}
-                  aria-label="Close raw JSON"
+                  aria-label="Close raw transaction JSON"
                 >
                   &times;
                 </button>

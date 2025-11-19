@@ -17,8 +17,8 @@ export default async function BlocksPage() {
   }));
 
   return (
-    <main className="container">
-      <section className="card table-card wide-layout">
+    <main className="container wide-layout">
+      <section className="card table-card">
         <div className="card-header">
           <div className="section-title">Recent Blocks</div>
           <span className="card-subtext">
