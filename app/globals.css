@@ -526,3 +526,52 @@ html[data-theme='dark'] .card {
 html[data-theme='dark'] table tbody tr:hover {
   background-color: rgba(55, 65, 81, 0.6);
 }
+
+/* Decrypt page form layout */
+.decrypt-form {
+  margin-top: 0.5rem;
+}
+
+.decrypt-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.decrypt-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.decrypt-helper {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.decrypt-form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.decrypt-error {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.decrypt-form textarea.search-input {
+  resize: vertical;
+}
+
+@media (min-width: 900px) {
+  .decrypt-form-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+
+  .decrypt-form-grid .decrypt-form-field:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}

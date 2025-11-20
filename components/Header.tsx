@@ -36,6 +36,7 @@ export default function Header() {
     if (pathname === '/') return 'home';
     if (pathname.startsWith('/block')) return 'blocks';
     if (pathname.startsWith('/tx')) return 'txs';
+    if (pathname.startsWith('/decrypt')) return 'decrypt';
     return '';
   };
 
@@ -96,6 +97,9 @@ export default function Header() {
         </Link>
         <Link href="/txs" className={`nav-tab ${activeTab === 'txs' ? 'nav-tab-active' : ''}`}>
           Transactions
+        </Link>
+        <Link href="/decrypt" className={`nav-tab ${activeTab === 'decrypt' ? 'nav-tab-active' : ''}`}>
+          Decrypt
         </Link>
       </nav>
       <div className="topbar-actions">
