@@ -1,3 +1,5 @@
+export const revalidate = 5;
+
 import { getBlockchainInfo } from '@/lib/zcashRpcClient';
 import { fetchRecentBlocks } from '@/lib/utils';
 import BlocksTable from '@/components/BlocksTable';
@@ -5,7 +7,7 @@ import BlocksTable from '@/components/BlocksTable';
 export default async function BlocksPage() {
   const info = await getBlockchainInfo();
   const bestHeight = info.blocks;
-  const recentBlocks = await fetchRecentBlocks(bestHeight, 50);
+  const recentBlocks = await fetchRecentBlocks(bestHeight, 10);
 
   const blocks = recentBlocks.map((b) => ({
     height: b.height,

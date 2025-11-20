@@ -10,16 +10,31 @@ export function formatRelativeTime(epochSeconds: number): string {
   return days === 1 ? '1 day ago' : `${days} days ago`;
 }
 
-// helper to fetch a window of recent blocks (simple, RPC-heavy but OK for demo)
+// helper to fetch a window of recent blocks.
+// Optimized to fetch block hashes and blocks in parallel for better responsiveness.
 export async function fetchRecentBlocks(startHeight: number, count: number) {
-  const blocks = [];
-  const endHeight = Math.max(startHeight - count + 1, 0);
-  for (let h = startHeight; h >= endHeight; h -= 1) {
-    const hash = await getBlockHash(h);
-    const block = await getBlock(hash);
+  const heights: number[] = [];
+  const maxCount = Math.max(count, 0);
 
+  for (let i = 0; i < maxCount; i += 1) {
+    const h = startHeight - i;
+    if (h < 0) break;
+    heights.push(h);
+  }
+
+  if (heights.length === 0) {
+    return [];
+  }
+
+  // Fetch all hashes and blocks concurrently instead of sequentially.
+  const hashes = await Promise.all(heights.map((h) => getBlockHash(h)));
+  const blocksRaw = await Promise.all(hashes.map((hash) => getBlock(hash)));
+
+  return blocksRaw.map((block, index) => {
+    const h = heights[index];
+    const hash = hashes[index];
     const size = block.size || block.strippedsize || null;
-    let outputTotal = null;
+    let outputTotal: number | null = null;
 
     if (Array.isArray(block.tx) && block.tx.length > 0 && typeof block.tx[0] !== 'string') {
       // verbose=2 block, can sum outputs without extra RPC calls
@@ -34,7 +49,7 @@ export async function fetchRecentBlocks(startHeight: number, count: number) {
       }
     }
 
-    blocks.push({
+    return {
       height: h,
       hash,
       time: block.time,
@@ -42,9 +57,8 @@ export async function fetchRecentBlocks(startHeight: number, count: number) {
       size,
       outputTotal,
       raw: block,
-    });
-  }
-  return blocks;
+    };
+  });
 }
 
 // decode a single transaction including input/output totals by fetching prevouts

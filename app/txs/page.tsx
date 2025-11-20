@@ -1,3 +1,5 @@
+export const revalidate = 5;
+
 import Link from 'next/link';
 import { getBlockchainInfo } from '@/lib/zcashRpcClient';
 import { fetchRecentBlocks } from '@/lib/utils';
@@ -5,7 +7,7 @@ import { fetchRecentBlocks } from '@/lib/utils';
 export default async function TransactionsPage() {
   const info = await getBlockchainInfo();
   const bestHeight = info.blocks;
-  const recentBlocks = await fetchRecentBlocks(bestHeight, 10);
+  const recentBlocks = await fetchRecentBlocks(bestHeight, 5);
 
   const txs: any[] = [];
   for (const b of recentBlocks) {
@@ -60,14 +62,14 @@ export default async function TransactionsPage() {
     }
   }
 
-  const limited = txs.slice(0, 50);
+  const limited = txs.slice(0, 25);
 
   return (
     <main className="container wide-layout">
       <section className="card table-card">
         <div className="card-header">
           <div className="section-title">Recent Transactions</div>
-          <span className="card-subtext">Up to 50 recent transactions from the latest blocks</span>
+          <span className="card-subtext">Up to 25 recent transactions from the latest blocks</span>
         </div>
         <div className="table-wrapper txs-table-wrapper">
           <table className="txs-table">

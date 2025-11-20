@@ -31,11 +31,23 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
     headers['x-api-key'] = ZCASH_GETBLOCK_API_KEY;
   }
 
-  const res = await fetch(ZCASH_RPC_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(ZCASH_RPC_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+  } catch (err: any) {
+    // Surface network-level errors (like connect timeout) with a clearer message
+    const message = err?.message || String(err);
+    const code = (err as any)?.code || (err as any)?.cause?.code;
+    console.error('[zcashRpcClient] RPC fetch failed', { url: ZCASH_RPC_URL, code, message });
+    throw new Error(
+      `[zcashRpcClient] Failed to reach Zcash RPC at "${ZCASH_RPC_URL}": ${code ? code + ' - ' : ''}${message}`,
+    );
+  }
 
   if (!res.ok) {
     const text = await res.text();

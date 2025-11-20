@@ -1,3 +1,5 @@
+export const revalidate = 30;
+
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBlock, getBlockHash } from '@/lib/zcashRpcClient';

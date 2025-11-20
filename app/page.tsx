@@ -1,3 +1,5 @@
+export const revalidate = 10;
+
 import { getBlockchainInfo, getNetworkHashPs } from '@/lib/zcashRpcClient';
 import { fetchRecentBlocks } from '@/lib/utils';
 import StatsCard, { StatItem } from '@/components/StatsCard';
@@ -11,8 +13,8 @@ export default async function Home() {
   const info = await getBlockchainInfo();
   const bestHeight = info.blocks;
 
-  // Fetch last 20 blocks to compute simple TPS / block rate
-  const recentBlocks = await fetchRecentBlocks(bestHeight, 20);
+  // Fetch last 10 blocks to compute simple TPS / block rate
+  const recentBlocks = await fetchRecentBlocks(bestHeight, 10);
 
   let txTotal = 0;
   let timeSpan = 0;
