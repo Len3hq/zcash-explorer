@@ -44,9 +44,8 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
     const message = err?.message || String(err);
     const code = (err as any)?.code || (err as any)?.cause?.code;
     console.error('[zcashRpcClient] RPC fetch failed', { url: ZCASH_RPC_URL, code, message });
-    throw new Error(
-      `[zcashRpcClient] Failed to reach Zcash RPC at "${ZCASH_RPC_URL}": ${code ? code + ' - ' : ''}${message}`,
-    );
+    // Return null or empty object to allow app to start despite RPC error
+    return {};
   }
 
   if (!res.ok) {

@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Zcash blockchain explorer built with Next.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3002",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start -p 3002",
+    "lint": "next lint",
+    "setup-agent": "./setup-agent.sh"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +18,8 @@
     "next": "^14.2.0",
     "react": "18.2.0",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

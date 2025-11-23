@@ -1,19 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
-
-const AGENT_CHAT_URL =
-  process.env.NEXT_PUBLIC_AGENT_CHAT_URL ?? 'http://localhost:5173/';
+import ChatClient from './ChatClient';
 
 export default function AgentChatWidget() {
   const [open, setOpen] = useState(false);
+  const [hasNewMessage, setHasNewMessage] = useState(false);
+
+
 
   return (
     <>
       {/* Floating toggle button */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+          if (!open) setHasNewMessage(false);
+        }}
         style={{
           position: 'fixed',
           right: '1.5rem',
@@ -21,7 +25,7 @@ export default function AgentChatWidget() {
           zIndex: 50,
           borderRadius: '9999px',
           padding: '0.65rem 1.3rem',
-          backgroundColor: '#0f172a',
+          backgroundColor: open ? '#1e293b' : '#0f172a',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -29,13 +33,39 @@ export default function AgentChatWidget() {
           fontSize: '0.875rem',
           border: '1px solid rgba(148, 163, 184, 0.6)',
           boxShadow: '0 18px 45px rgba(15, 23, 42, 0.6)',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#1e40af';
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = open ? '#1e293b' : '#0f172a';
+          e.currentTarget.style.transform = 'scale(1)';
         }}
       >
-        <i className="fa-solid fa-robot" aria-hidden="true" />
+        <div style={{ position: 'relative' }}>
+          <i className="fa-solid fa-robot" aria-hidden="true" />
+          {hasNewMessage && !open && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#ef4444',
+                borderRadius: '50%',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              }}
+            />
+          )}
+        </div>
         <span>{open ? 'Close Zcash Agent' : 'Ask Zcash Agent'}</span>
       </button>
 
-      {/* Popup iframe container */}
+      {/* Popup chat container */}
       {open && (
         <div
           style={{
@@ -52,20 +82,34 @@ export default function AgentChatWidget() {
             backgroundColor: '#020617',
             boxShadow:
               '0 24px 60px rgba(15, 23, 42, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.25)',
+            animation: 'slideUp 0.3s ease-out',
           }}
         >
-          <iframe
-            src={AGENT_CHAT_URL}
-            title="Zcash Agent Chat"
-            style={{
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              backgroundColor: 'transparent',
-            }}
-          />
+          <ChatClient onNewMessage={() => setHasNewMessage(true)} />
         </div>
       )}
+      
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </>
   );
 }

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 export const revalidate = 5;
 
 import { getBlockchainInfo } from '@/lib/zcashRpcClient';
