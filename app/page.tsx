@@ -71,7 +71,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="grid-2">
+      <section className="grid-2 mt-lg">
         <StatsCard title="Network Overview" badge={{ dot: true, text: `${info.chain} chain` }}>
           <div>
             <div className="key-label">

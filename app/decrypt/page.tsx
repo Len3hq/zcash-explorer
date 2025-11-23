@@ -112,22 +112,6 @@ export default function DecryptPage() {
             </div>
 
             <div className="decrypt-form-field">
-              <label className="key-label" htmlFor="ufvk-input">
-                Unified Full Viewing Key (UFVK)
-              </label>
-              <textarea
-                id="ufvk-input"
-                className="search-input"
-                value={ufvk}
-                onChange={(e) => setUfvk(e.target.value)}
-                placeholder="uview1... (mainnet) or uviewtest1... (testnet)"
-                rows={3}
-                required
-              />
-              <p className="decrypt-helper">Use a view-only key (UFVK) from your wallet; this does not grant spending access.</p>
-            </div>
-
-            <div className="decrypt-form-field">
               <label className="key-label" htmlFor="height-input">
                 Block height (optional)
               </label>
@@ -142,11 +126,27 @@ export default function DecryptPage() {
               />
               <p className="decrypt-helper">Height is used as a hint for consensus rules; you can usually leave this blank.</p>
             </div>
+
+            <div className="decrypt-form-field">
+              <label className="key-label" htmlFor="ufvk-input">
+                Unified Full Viewing Key (UFVK)
+              </label>
+              <textarea
+                id="ufvk-input"
+                className="search-input"
+                value={ufvk}
+                onChange={(e) => setUfvk(e.target.value)}
+                placeholder="uview1... (mainnet) or uviewtest1... (testnet)"
+                rows={3}
+                required
+              />
+              <p className="decrypt-helper">Use a view-only key (UFVK) from your wallet; this does not grant spending access.</p>
+            </div>
           </div>
 
           <div className="decrypt-form-actions">
             <button type="submit" className="button-primary" disabled={loading}>
-              {loading ? 'Decrypting…' : 'Decrypt transaction'}
+              {loading ? 'Decrypting…' : 'Show shielded transaction'}
             </button>
             {error && <span className="decrypt-error">{error}</span>}
           </div>

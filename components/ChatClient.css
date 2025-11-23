@@ -32,14 +32,10 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--zec-gold) 0%, var(--zec-gold-dark) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 1.1rem;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(243, 183, 36, 0.25);
 }
 
 .chat-agent-details {
@@ -205,8 +201,6 @@ html[data-theme='dark'] .chat-error {
 }
 
 .message-avatar.agent {
-  background: linear-gradient(135deg, var(--zec-gold) 0%, var(--zec-gold-dark) 100%);
-  color: white;
 }
 
 /* Chat Bubbles */

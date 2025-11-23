@@ -115,12 +115,19 @@ export default function PriceChart() {
               label += ': ';
             }
             if (context.parsed.y !== null) {
-              label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+              label += new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(context.parsed.y);
             }
             return label;
           },
           title: function (context: any) {
-            const date = new Date(context[0].parsed.x);
+            const index = context[0]?.dataIndex ?? 0;
+            const timestamp = dates[index]; // CoinGecko provides ms since epoch
+            const date = new Date(timestamp);
             return format(date, 'MMM d, yyyy');
           }
         }
@@ -140,8 +147,13 @@ export default function PriceChart() {
         },
         ticks: {
           callback: function (value: any) {
-            return '$' + value.toLocaleString();
-          }
+            return new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(value as number);
+          },
         }
       },
     },
@@ -156,9 +168,14 @@ export default function PriceChart() {
     <div className="w-full h-[500px] bg-white rounded-lg p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Zcash Price Chart (30 Days)</h3>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(prices[prices.length - 1])}
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">$ZEC Price Chart (30 Days)</h3>
+          <div className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-50 tracking-tight">
+            {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(prices[prices.length - 1])}
           </div>
         </div>
       </div>

@@ -66,7 +66,13 @@ export default function CoinDetails() {
   if (error) return <div className="h-[500px] flex items-center justify-center text-red-500 bg-white rounded-lg shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">{error}</div>;
   if (!coinData) return null;
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(val);
   const formatNumber = (val: number) => new Intl.NumberFormat('en-US').format(val);
   const formatPercentage = (val: number) => `${val.toFixed(2)}%`;
 
@@ -84,10 +90,17 @@ export default function CoinDetails() {
 
       <div className="key-value-grid">
         <div className="col-span-full mb-4">
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <div className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-50 flex items-center gap-3 tracking-tight">
             {formatCurrency(coinData.current_price)}
-            <span className={`text-sm font-medium px-2 py-0.5 rounded ${coinData.price_change_percentage_24h >= 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-              {coinData.price_change_percentage_24h >= 0 ? '+' : ''}{formatPercentage(coinData.price_change_percentage_24h)}
+            <span
+              className={`text-sm md:text-base font-semibold px-3 py-1 rounded-full shadow-sm ${
+                coinData.price_change_percentage_24h >= 0
+                  ? 'bg-green-500 text-white dark:bg-green-400 dark:text-gray-900'
+                  : 'bg-red-500 text-white dark:bg-red-400 dark:text-gray-900'
+              }`}
+            >
+              {coinData.price_change_percentage_24h >= 0 ? '+' : ''}
+              {formatPercentage(coinData.price_change_percentage_24h)}
             </span>
           </div>
         </div>

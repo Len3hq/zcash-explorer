@@ -104,17 +104,17 @@ a:hover {
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--zec-gold);
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  color: #fff;
-  font-size: 1rem;
-  box-shadow: 0 2px 10px rgba(243, 183, 36, 0.3);
+}
+
+.brand-logo svg,
+.brand-logo img {
+  width: 100%;
+  height: 100%;
 }
 
 .brand-title {
@@ -290,6 +290,35 @@ a:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1.5rem;
+}
+
+/* Price / change pills (used by market cards) */
+.price-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.price-pill.negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+html[data-theme='dark'] .price-pill {
+  background: rgba(34, 197, 94, 0.2);
+  color: #bbf7d0;
+}
+
+html[data-theme='dark'] .price-pill.negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
 }
 
 .key-label {

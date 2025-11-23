@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useTheme } from './ThemeProvider';
 import './ChatClient.css';
+import ZcashLogo from './ZcashLogo';
 
 // Socket.IO Message Types (from ElizaOS documentation)
 enum SOCKET_MESSAGE_TYPE {
@@ -198,8 +199,8 @@ export default function ChatClient({ onNewMessage }: ChatClientProps) {
             <div className="chat-header">
                 <div className="chat-header-content">
                     <div className="chat-agent-info">
-                        <div className="chat-avatar">
-                            <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+                        <div className="chat-avatar" aria-hidden="true">
+                            <ZcashLogo size={32} />
                         </div>
                         <div className="chat-agent-details">
                             <span className="chat-agent-name">Zcash Agent</span>
@@ -229,8 +230,8 @@ export default function ChatClient({ onNewMessage }: ChatClientProps) {
                 {messages.map((msg) => (
                     <div key={msg.id} className={`chat-message-wrapper ${msg.sender}`}>
                         {msg.sender === 'agent' && (
-                            <div className="message-avatar agent">
-                                <i className="fa-solid fa-robot" />
+                            <div className="message-avatar agent" aria-hidden="true">
+                                <ZcashLogo size={24} />
                             </div>
                         )}
                         <div className={`chat-bubble ${msg.sender}`}>
@@ -242,8 +243,8 @@ export default function ChatClient({ onNewMessage }: ChatClientProps) {
                 {/* Typing Indicator */}
                 {isTyping && (
                     <div className="chat-message-wrapper agent">
-                        <div className="message-avatar agent">
-                            <i className="fa-solid fa-robot" />
+                        <div className="message-avatar agent" aria-hidden="true">
+                            <ZcashLogo size={24} />
                         </div>
                         <div className="chat-bubble agent typing">
                             <div className="typing-dots">
