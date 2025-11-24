@@ -35,6 +35,9 @@ ENV NODE_ENV production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install curl and bash for setup script
+RUN apk add --no-cache curl bash
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -49,6 +52,10 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy setup script
+COPY --from=builder --chown=nextjs:nodejs /app/setup-agent.sh ./setup-agent.sh
+RUN chmod +x setup-agent.sh
+
 USER nextjs
 
 EXPOSE 3002
@@ -57,4 +64,5 @@ ENV PORT 3002
 # set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+# Run setup script and then start the server
+CMD ["/bin/bash", "-c", "./setup-agent.sh || true && node server.js"]

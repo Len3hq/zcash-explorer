@@ -5,7 +5,8 @@
 
 AGENT_ID="cb11f567-f3a2-011c-bdfe-872f7453f6d1"
 CHANNEL_ID="cb11f567-f3a2-011c-bdfe-872f7453f6d1"
-ELIZA_URL="http://localhost:3000"
+# ELIZA_URL="http://localhost:3000"
+ELIZA_URL="https://zcashagent103-production.up.railway.app"
 
 echo "🤖 Setting up Zcash Agent integration..."
 echo ""
