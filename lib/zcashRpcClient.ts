@@ -36,7 +36,6 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      cache: 'no-store',
     });
 
     if (!res.ok) {
