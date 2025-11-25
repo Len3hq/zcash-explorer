@@ -31,14 +31,25 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
     headers['x-api-key'] = ZCASH_GETBLOCK_API_KEY;
   }
 
-  let res: Response;
   try {
-    res = await fetch(ZCASH_RPC_URL, {
+    const res = await fetch(ZCASH_RPC_URL, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
       cache: 'no-store',
     });
+
+    if (!res.ok) {
+      const text = await res?.text();
+      throw new Error(`RPC HTTP error ${res.status}: ${text}`);
+    }
+
+    const json = await res?.json();
+    if (json?.error) {
+      throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
+    }
+    return json?.result;
+    
   } catch (err: any) {
     // Surface network-level errors (like connect timeout) with a clearer message
     const message = err?.message || String(err);
@@ -47,17 +58,6 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
     // Return null or empty object to allow app to start despite RPC error
     return {};
   }
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`RPC HTTP error ${res.status}: ${text}`);
-  }
-
-  const json = await res.json();
-  if (json.error) {
-    throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
-  }
-  return json.result;
 }
 
 export async function getBlockchainInfo() {
