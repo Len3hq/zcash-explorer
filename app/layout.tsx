@@ -6,6 +6,11 @@ import AgentChatWidget from '@/components/AgentChatWidget';
 export const metadata: Metadata = {
   title: 'Zcash Explorer',
   description: 'A lightweight Zcash blockchain explorer with live stats and transaction views',
+  icons: {
+    icon: '/zcash-logo.png',
+    shortcut: '/zcash-logo.png',
+    apple: '/zcash-logo.png',
+  },
 };
 
 export default function RootLayout({
