@@ -17,7 +17,7 @@ enum SOCKET_MESSAGE_TYPE {
 }
 
 const AGENT_ID = process.env.NEXT_PUBLIC_ELIZA_AGENT_ID || 'cb11f567-f3a2-011c-bdfe-872f7453f6d1';
-const SOCKET_URL = process.env.NEXT_PUBLIC_ELIZA_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = process.env.NEXT_PUBLIC_ELIZA_SOCKET_URL || 'https://zcashagent103-production.up.railway.app';
 
 // Generate or retrieve a persistent user ID (UUID format required by ElizaOS)
 const getUserId = (): string => {
