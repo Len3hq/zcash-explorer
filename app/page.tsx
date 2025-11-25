@@ -11,11 +11,35 @@ import PriceChart from '@/components/PriceChart';
 import CoinDetails from '@/components/CoinDetails';
 
 export default async function Home() {
-  const info = await getBlockchainInfo();
+  let info: any;
+  try {
+    info = await getBlockchainInfo();
+  } catch (e) {
+    console.error('[Home] Failed to fetch getblockchaininfo RPC', e);
+    return (
+      <main className="container wide-layout">
+        <section className="card mt-lg">
+          <div className="card-header">
+            <div className="section-title">Zcash Explorer</div>
+          </div>
+          <p className="card-subtext">
+            The backend RPC endpoint is temporarily unavailable or rate limited. Please try again in a few moments.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   const bestHeight = info.blocks;
 
   // Fetch last 10 blocks to compute simple TPS / block rate
-  const recentBlocks = await fetchRecentBlocks(bestHeight, 10);
+  let recentBlocks: any[] = [];
+  try {
+    recentBlocks = await fetchRecentBlocks(bestHeight, 10);
+  } catch (e) {
+    console.error('[Home] Failed to fetch recent blocks', e);
+    recentBlocks = [];
+  }
 
   let txTotal = 0;
   let timeSpan = 0;
