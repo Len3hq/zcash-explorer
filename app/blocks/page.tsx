@@ -7,7 +7,7 @@ import BlocksTable from '@/components/BlocksTable';
 
 export default async function BlocksPage() {
   const info = await getBlockchainInfo();
-  const bestHeight = info.blocks;
+  const bestHeight = info?.blocks;
   const recentBlocks = await fetchRecentBlocks(bestHeight, 10);
 
   const blocks = recentBlocks.map((b) => ({
