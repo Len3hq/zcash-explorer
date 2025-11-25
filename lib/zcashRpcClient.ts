@@ -52,7 +52,7 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
   } catch (err: any) {
     // Surface network-level errors (like connect timeout) with a clearer message
     const message = err?.message || String(err);
-    const code = (err as any)?.code || (err as any)?.cause?.code;
+    const code = (err as any)?.code || (err as any)?.cause?.code || 0;
     console.error('[zcashRpcClient] RPC fetch failed', { url: ZCASH_RPC_URL, code, message });
     // Return null or empty object to allow app to start despite RPC error
     return {};
