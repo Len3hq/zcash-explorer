@@ -39,6 +39,8 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
   
   for (let i = 0; i < endpoints.length; i++) {
     const endpoint = endpoints[i];
+    if (!endpoint) continue; // Skip if endpoint is undefined
+    
     const isFallback = i > 0;
     
     try {
