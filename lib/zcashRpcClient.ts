@@ -14,7 +14,7 @@ if (!ZCASH_RPC_URL) {
 
 async function rpcCall(method: string, params: any[] = []): Promise<any> {
   const endpoints = [ZCASH_RPC_URL, ZCASH_RPC_FALLBACK_URL].filter(Boolean);
-  
+
   if (endpoints.length === 0) {
     throw new Error('No RPC endpoints configured');
   }
@@ -36,18 +36,18 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
   }
 
   let lastError: any;
-  
+
   for (let i = 0; i < endpoints.length; i++) {
     const endpoint = endpoints[i];
     if (!endpoint) continue; // Skip if endpoint is undefined
-    
+
     const isFallback = i > 0;
-    
+
     try {
       if (isFallback) {
         console.log(`[zcashRpcClient] Trying fallback endpoint for ${method}`);
       }
-      
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
@@ -63,31 +63,31 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
       if (json?.error) {
         throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
       }
-      
+
       if (isFallback) {
         console.log(`[zcashRpcClient] Fallback successful for ${method}`);
       }
-      
+
       return json?.result;
-      
+
     } catch (err: any) {
       lastError = err;
       const message = err?.message || String(err);
       const code = (err as any)?.code || (err as any)?.cause?.code || 0;
-      console.error(`[zcashRpcClient] RPC call failed for endpoint ${i + 1}/${endpoints.length}`, { 
-        url: endpoint, 
+      console.error(`[zcashRpcClient] RPC call failed for endpoint ${i + 1}/${endpoints.length}`, {
+        url: endpoint,
         method,
-        code, 
-        message 
+        code,
+        message
       });
-      
+
       // Continue to next endpoint if available
       if (i < endpoints.length - 1) {
         continue;
       }
     }
   }
-  
+
   // All endpoints failed
   console.error('[zcashRpcClient] All RPC endpoints failed', { method, lastError: lastError?.message });
   throw new Error(`RPC call failed: ${lastError?.message || 'Unknown error'}`);
@@ -117,4 +117,9 @@ export async function getRawTransaction(txid: string, verbose: boolean = true) {
 export async function getNetworkHashPs(blocks: number = 120, height: number = -1) {
   // approximate network hash rate (for stats)
   return rpcCall('getnetworkhashps', [blocks, height]);
+}
+
+export async function getChainTxStats(nblocks?: number) {
+  // Get chain transaction statistics - returns txrate (tx/s), txcount, window stats
+  return rpcCall('getchaintxstats', nblocks ? [nblocks] : []);
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBlock, getBlockHash } from '@/lib/zcashRpcClient';
 import { computeBlockSummary } from '@/lib/utils';
+import ExplainerCard from '@/components/ExplainerCard';
 
 export default async function BlockPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -220,6 +221,38 @@ export default async function BlockPage({ params }: { params: { id: string } }) 
           </table>
         </div>
       </section>
+
+      <ExplainerCard
+        title="How to read this block"
+        description="This view breaks down a single Zcash block into human‑readable summary, technical header fields, and included transactions."
+        items={[
+          {
+            label: 'Block identity',
+            body:
+              'The title and header show the block height, unique hash, when it was mined, how long ago that was, and (where available) the mining pool or address.',
+          },
+          {
+            label: 'Transaction totals',
+            body:
+              'Input and output counts and totals give an approximate view of how much transparent value moved in this block. Shielded value may not be fully visible.',
+          },
+          {
+            label: 'Technical details',
+            body:
+              'Fields like difficulty, size, version, bits, merkle root, chainwork, and nonce come from the raw block header and help describe how hard the block was to mine and how it links into the chain.',
+          },
+          {
+            label: 'Chain navigation',
+            body:
+              'Previous and next block hashes let you move backward or forward through the chain to inspect neighboring blocks.',
+          },
+          {
+            label: 'Transaction list',
+            body:
+              'The table at the bottom lists every transaction hash in this block. Click any TxID to open the full decoded transaction view.',
+          },
+        ]}
+      />
     </main>
   );
 }

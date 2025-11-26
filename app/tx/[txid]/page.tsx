@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { decodeTransactionWithPrevouts } from '@/lib/utils';
 import RawModal from '@/components/RawModal';
+import ExplainerCard from '@/components/ExplainerCard';
 
 export default async function TransactionPage({ params }: { params: { txid: string } }) {
   const { txid } = params;
@@ -202,6 +203,33 @@ export default async function TransactionPage({ params }: { params: { txid: stri
       )}
 
       <RawModal data={tx} />
+
+      <ExplainerCard
+        title="How to read this transaction"
+        description="This page decodes a single Zcash transaction into summary fields, decoded outputs, and raw structures from the Zcash node."
+        items={[
+          {
+            label: 'Summary card',
+            body:
+              'Shows the TxID, version, lock time, number of inputs and outputs, total value moved, and whether the transaction is Coinbase, Shielded, or Transparent.',
+          },
+          {
+            label: 'Confirmations and block link',
+            body:
+              'Confirmations indicate how many blocks have been mined on top of this one; the linked block hash takes you to the containing block for more context.',
+          },
+          {
+            label: 'Decoded outputs table',
+            body:
+              'Lists each decoded transparent output: index, recipient address (if available), output type, and value in ZEC. Shielded outputs that cannot be decoded are not listed here.',
+          },
+          {
+            label: 'Raw vin / vout and shielded data',
+            body:
+              'The JSON sections show the full vin, vout, any JoinSplit data, and value balance exactly as returned by the Zcash node for deeper debugging or auditing.',
+          },
+        ]}
+      />
     </main>
   );
 }

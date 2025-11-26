@@ -99,13 +99,13 @@ export default function Header() {
           </div>
         </Link>
         <div className="topbar-right">
-          <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
+          <button type="button" className="theme-toggle theme-toggle-mobile" onClick={toggleTheme} aria-label="Toggle dark mode">
             <i className={theme === 'dark' ? 'fa-regular fa-sun' : 'fa-regular fa-moon'} aria-hidden="true"></i>
             <span className="theme-toggle-text">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
-          <button 
-            type="button" 
-            className="hamburger-menu" 
+          <button
+            type="button"
+            className="hamburger-menu"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
             aria-expanded={mobileMenuOpen}
@@ -143,6 +143,10 @@ export default function Header() {
             <span className="button-primary-text">Search</span>
           </button>
         </form>
+        <button type="button" className="theme-toggle theme-toggle-desktop" onClick={toggleTheme} aria-label="Toggle dark mode">
+          <i className={theme === 'dark' ? 'fa-regular fa-sun' : 'fa-regular fa-moon'} aria-hidden="true"></i>
+          <span className="theme-toggle-text">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+        </button>
       </div>
     </header>
   );

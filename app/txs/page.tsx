@@ -4,6 +4,7 @@ export const revalidate = 5;
 import Link from 'next/link';
 import { getBlockchainInfo } from '@/lib/zcashRpcClient';
 import { fetchRecentBlocks } from '@/lib/utils';
+import ExplainerCard from '@/components/ExplainerCard';
 
 export default async function TransactionsPage() {
   const info = await getBlockchainInfo();
@@ -136,6 +137,33 @@ export default async function TransactionsPage() {
           </table>
         </div>
       </section>
+
+      <ExplainerCard
+        title="How to read recent transactions"
+        description="This table shows a rolling window of the latest transactions seen in recent blocks."
+        items={[
+          {
+            label: 'TxID and block',
+            body:
+              'Each transaction is identified by its TxID and linked to the block hash and height where it was confirmed. Click any link to open detailed views.',
+          },
+          {
+            label: 'Inputs and outputs',
+            body:
+              'Input and output counts show how many transparent inputs and outputs are decoded for the transaction. A dash means that detail was not available from the node.',
+          },
+          {
+            label: 'Output (ZEC)',
+            body:
+              'Shows an approximate sum of transparent outputs, in ZEC. This does not include amounts that remain shielded or cannot be decoded.',
+          },
+          {
+            label: 'Transaction type',
+            body:
+              'Coinbase transactions mint new ZEC as block rewards, Shielded transactions touch Zcash privacy pools, and Transparent transactions move funds using t‑addresses.',
+          },
+        ]}
+      />
     </main>
   );
 }

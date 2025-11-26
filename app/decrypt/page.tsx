@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import RawModal from '@/components/RawModal';
+import ExplainerCard from '@/components/ExplainerCard';
 
 interface OutputInfo {
   protocol: string;
@@ -36,6 +37,7 @@ function formatZec(zats: number): string {
 }
 
 export default function DecryptPage() {
+  const [activeTab, setActiveTab] = useState<'tx' | 'wallet'>('tx');
   const [txid, setTxid] = useState('');
   const [ufvk, setUfvk] = useState('');
   const [height, setHeight] = useState('');
@@ -87,70 +89,152 @@ export default function DecryptPage() {
     <main className="container wide-layout">
       <section className="card">
         <div className="card-header">
-          <div className="section-title">Decrypt Viewing Key</div>
+          <div className="section-title">Shielded Decryption Tools</div>
           <span className="card-subtext">
-            Provide a transaction ID (txid) and Unified Full Viewing Key (UFVK) to decrypt shielded outputs.
+            Work with your Unified Full Viewing Key (UFVK) to inspect shielded activity.
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="decrypt-form">
-          <div className="decrypt-form-grid">
-            <div className="decrypt-form-field">
-              <label className="key-label" htmlFor="txid-input">
-                Transaction ID (txid)
-              </label>
-              <input
-                id="txid-input"
-                className="search-input"
-                type="text"
-                value={txid}
-                onChange={(e) => setTxid(e.target.value)}
-                placeholder="64-character transaction ID"
-                required
-              />
-              <p className="decrypt-helper">Paste the 64-character transaction ID you want to inspect.</p>
+        <div className="decrypt-disclaimer">
+          <strong>Privacy note.</strong> Your viewing key is handled only for this session and is never written to disk or
+          stored in logs by this explorer. The key is used solely to derive the shielded notes and memos that belong to
+          you; once the response is returned, it lives only in your browser memory until you reload or leave this page.
+        </div>
+
+        <div className="decrypt-tabs" role="tablist" aria-label="Shielded decryption modes">
+          <button
+            type="button"
+            className={`decrypt-tab ${activeTab === 'tx' ? 'decrypt-tab-active' : ''}`}
+            onClick={() => setActiveTab('tx')}
+            role="tab"
+            aria-selected={activeTab === 'tx'}
+          >
+            Single transaction
+          </button>
+          <button
+            type="button"
+            className={`decrypt-tab ${activeTab === 'wallet' ? 'decrypt-tab-active' : ''}`}
+            onClick={() => setActiveTab('wallet')}
+            role="tab"
+            aria-selected={activeTab === 'wallet'}
+          >
+            Scan wallet (UFVK)
+          </button>
+        </div>
+
+
+        {activeTab === 'tx' && (
+          <form
+            onSubmit={handleSubmit}
+            className="decrypt-form decrypt-panel"
+            role="tabpanel"
+            aria-label="Single transaction"
+          >
+            <div className="decrypt-form-grid">
+              <div className="decrypt-form-field">
+                <label className="key-label" htmlFor="txid-input">
+                  Transaction ID (txid)
+                </label>
+                <input
+                  id="txid-input"
+                  className="search-input"
+                  type="text"
+                  value={txid}
+                  onChange={(e) => setTxid(e.target.value)}
+                  placeholder="64-character transaction ID"
+                  required
+                />
+                <p className="decrypt-helper">Paste the 64-character transaction ID you want to inspect.</p>
+              </div>
+
+              <div className="decrypt-form-field">
+                <label className="key-label" htmlFor="height-input">
+                  Block height (optional)
+                </label>
+                <input
+                  id="height-input"
+                  className="search-input"
+                  type="number"
+                  min={0}
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="Defaults to 2,500,000 if omitted"
+                />
+                <p className="decrypt-helper">Height is used as a hint for consensus rules; you can usually leave this blank.</p>
+              </div>
+
+              <div className="decrypt-form-field">
+                <label className="key-label" htmlFor="ufvk-input">
+                  Unified Full Viewing Key (UFVK)
+                </label>
+                <textarea
+                  id="ufvk-input"
+                  className="search-input"
+                  value={ufvk}
+                  onChange={(e) => setUfvk(e.target.value)}
+                  placeholder="uview1... (mainnet) or uviewtest1... (testnet)"
+                  rows={3}
+                  required
+                />
+                <p className="decrypt-helper">Use a view-only key (UFVK) from your wallet; this does not grant spending access.</p>
+              </div>
             </div>
 
-            <div className="decrypt-form-field">
-              <label className="key-label" htmlFor="height-input">
-                Block height (optional)
-              </label>
-              <input
-                id="height-input"
-                className="search-input"
-                type="number"
-                min={0}
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                placeholder="Defaults to 2,500,000 if omitted"
-              />
-              <p className="decrypt-helper">Height is used as a hint for consensus rules; you can usually leave this blank.</p>
+            <div className="decrypt-form-actions">
+              <button type="submit" className="button-primary" disabled={loading}>
+                {loading ? 'Decrypting…' : 'Show shielded transaction'}
+              </button>
+              {error && <span className="decrypt-error">{error}</span>}
             </div>
+          </form>
+        )}
 
-            <div className="decrypt-form-field">
-              <label className="key-label" htmlFor="ufvk-input">
-                Unified Full Viewing Key (UFVK)
-              </label>
-              <textarea
-                id="ufvk-input"
-                className="search-input"
-                value={ufvk}
-                onChange={(e) => setUfvk(e.target.value)}
-                placeholder="uview1... (mainnet) or uviewtest1... (testnet)"
-                rows={3}
-                required
-              />
-              <p className="decrypt-helper">Use a view-only key (UFVK) from your wallet; this does not grant spending access.</p>
+        {activeTab === 'wallet' && (
+          <div className="decrypt-form decrypt-panel" role="tabpanel" aria-label="Scan wallet">
+            <div className="decrypt-form-grid">
+              <div className="decrypt-form-field">
+                <label className="key-label" htmlFor="wallet-ufvk-input">
+                  Unified Full Viewing Key (UFVK)
+                </label>
+                <textarea
+                  id="wallet-ufvk-input"
+                  className="search-input"
+                  value={ufvk}
+                  onChange={(e) => setUfvk(e.target.value)}
+                  placeholder="uview1... (mainnet) or uviewtest1... (testnet)"
+                  rows={3}
+                />
+                <p className="decrypt-helper">
+                  Use a view-only key from your wallet; this flow is designed for inspecting activity, not spending.
+                </p>
+              </div>
+
+              <div className="decrypt-form-field">
+                <label className="key-label" htmlFor="wallet-height-input">
+                  Starting block height (optional)
+                </label>
+                <input
+                  id="wallet-height-input"
+                  className="search-input"
+                  type="number"
+                  min={0}
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="Use a recent height to limit how far back the scan goes"
+                />
+                <p className="decrypt-helper">
+                  A lower height means a deeper scan through the chain; a higher height is faster but only includes more
+                  recent notes.
+                </p>
+              </div>
+            </div>
+            <div className="decrypt-form-actions">
+              <button type="button" className="button-primary" disabled>
+                Wallet scan coming soon
+              </button>
             </div>
           </div>
-
-          <div className="decrypt-form-actions">
-            <button type="submit" className="button-primary" disabled={loading}>
-              {loading ? 'Decrypting…' : 'Show shielded transaction'}
-            </button>
-            {error && <span className="decrypt-error">{error}</span>}
-          </div>
-        </form>
+        )}
       </section>
 
       {result && (
@@ -231,6 +315,23 @@ export default function DecryptPage() {
           <RawModal data={result} />
         </>
       )}
+
+      <ExplainerCard
+        title="How this shielded‑transaction viewer works"
+        description="Use a Unified Full Viewing Key (UFVK) to inspect your own shielded activity without exposing spending keys."
+        items={[
+          {
+            label: 'What you provide',
+            body:
+              'You submit a transaction ID (txid) and a UFVK from your wallet. An optional block height hint helps the backend select the right consensus rules but is not required.',
+          },
+          {
+            label: 'What the UFVK exposes',
+            body:
+              'The UFVK is view‑only. It lets the server discover which shielded outputs and memos belong to you so they can be decoded, but it cannot move funds or sign transactions.',
+          },
+        ]}
+      />
     </main>
   );
 }

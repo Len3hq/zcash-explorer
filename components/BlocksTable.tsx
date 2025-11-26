@@ -38,7 +38,7 @@ export default function BlocksTable({ blocks, showAllColumns = false }: BlocksTa
               <td>
                 <span className="hash-with-copy">
                   <Link href={`/block/${block.height}`} className="hash-truncate">
-                    {block.height}
+                    {new Intl.NumberFormat('en-US').format(block.height)}
                   </Link>
                 </span>
               </td>
@@ -49,19 +49,27 @@ export default function BlocksTable({ blocks, showAllColumns = false }: BlocksTa
               </td>
               <td className="timestamp">{new Date(block.time * 1000).toISOString()}</td>
               <td>
-                <span className="tx-count-pill">
+                  <span className="tx-count-pill">
                   <span>·</span>
-                  <span>{block.txCount} txs</span>
+                  <span>{new Intl.NumberFormat('en-US').format(block.txCount)} txs</span>
                 </span>
               </td>
               {showAllColumns && (
                 <>
                   <td>
-                    {block.size ? `${(block.size / 1024).toFixed(2)} KB` : <span className="muted">–</span>}
+                    {block.size
+                      ? `${new Intl.NumberFormat('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(block.size / 1024)} KB`
+                      : <span className="muted">–</span>}
                   </td>
                   <td>
                     {typeof block.outputTotal === 'number' ? (
-                      block.outputTotal.toFixed(8)
+                      new Intl.NumberFormat('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(block.outputTotal)
                     ) : (
                       <span className="muted">–</span>
                     )}

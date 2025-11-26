@@ -3,14 +3,24 @@ interface StatItemProps {
   label: string;
   value: string | number;
   suffix?: string;
+  tooltip?: string;
 }
 
-function StatItem({ icon, label, value, suffix }: StatItemProps) {
+function StatItem({ icon, label, value, suffix, tooltip }: StatItemProps) {
+  const containerProps = tooltip
+    ? { className: 'stat-item stat-item-has-tooltip', 'data-tooltip': tooltip }
+    : { className: 'stat-item' };
+
   return (
-    <div>
+    <div {...containerProps}>
       <div className="key-label">
         <i className={`${icon} stat-icon`} aria-hidden="true"></i>
-        {label}
+        <span>{label}</span>
+        {tooltip && (
+          <span className="stat-help" aria-hidden="true">
+            <i className="fa-regular fa-circle-question" />
+          </span>
+        )}
       </div>
       <div className="key-value">
         {value}

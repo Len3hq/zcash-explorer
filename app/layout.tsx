@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
 import AgentChatWidget from '@/components/AgentChatWidget';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Zcash Explorer',
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className="theme-zec">
         <Header />
         {children}
+        <Footer />
         <AgentChatWidget />
       </body>
     </html>

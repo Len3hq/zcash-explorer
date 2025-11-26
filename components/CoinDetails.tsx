@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 
@@ -76,6 +78,9 @@ export default function CoinDetails() {
   const formatNumber = (val: number) => new Intl.NumberFormat('en-US').format(val);
   const formatPercentage = (val: number) => `${val.toFixed(2)}%`;
 
+  const isPriceUp = coinData.price_change_percentage_24h > 0;
+  const isPriceDown = coinData.price_change_percentage_24h < 0;
+
   return (
     <div className="card h-full">
       <div className="card-header">
@@ -90,17 +95,29 @@ export default function CoinDetails() {
 
       <div className="key-value-grid">
         <div className="col-span-full mb-4">
-          <div className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-50 flex items-center gap-3 tracking-tight">
+          {/* Clarify that this is the coin price, per ZEC */}
+          <div className="key-label mb-1">
+            Price per {coinData.symbol.toUpperCase()}
+          </div>
+          <div
+            className={`text-4xl md:text-5xl font-extrabold flex items-center gap-3 tracking-tight ${isPriceUp
+                ? 'text-green-600 dark:text-green-400'
+                : isPriceDown
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-gray-900 dark:text-gray-50'
+              }`}
+          >
             {formatCurrency(coinData.current_price)}
             <span
-              className={`text-sm md:text-base font-semibold px-3 py-1 rounded-full shadow-sm ${
-                coinData.price_change_percentage_24h >= 0
-                  ? 'bg-green-500 text-white dark:bg-green-400 dark:text-gray-900'
-                  : 'bg-red-500 text-white dark:bg-red-400 dark:text-gray-900'
-              }`}
+              className={`text-lg md:text-xl font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 ${isPriceUp
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  : isPriceDown
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                }`}
             >
-              {coinData.price_change_percentage_24h >= 0 ? '+' : ''}
-              {formatPercentage(coinData.price_change_percentage_24h)}
+              {isPriceUp ? '▲' : isPriceDown ? '▼' : ''}
+              {formatPercentage(Math.abs(coinData.price_change_percentage_24h))}
             </span>
           </div>
         </div>
