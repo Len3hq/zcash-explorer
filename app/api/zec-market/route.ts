@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 const ZEC_ID = 'zcash';
 const VS_CURRENCY = 'usd';
+const CHART_DAYS = 30; // match the "30 Days" price chart in the UI
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
 const COINGECKO_KEY_HEADER =
@@ -15,22 +16,41 @@ interface MarketChartPoint extends Array<number> {
 
 export async function GET() {
   try {
+    // Use free public CoinGecko endpoints by default. If a key is provided,
+    // send it via the configured header; otherwise call without auth.
     const headers: HeadersInit = {};
     if (COINGECKO_API_KEY) {
       headers[COINGECKO_KEY_HEADER] = COINGECKO_API_KEY;
     }
 
     const marketUrl = `${COINGECKO_BASE}/coins/markets?vs_currency=${VS_CURRENCY}&ids=${ZEC_ID}&price_change_percentage=24h`;
-    const chartUrl = `${COINGECKO_BASE}/coins/${ZEC_ID}/market_chart?vs_currency=${VS_CURRENCY}&days=7&interval=hourly`;
+    // For free/standard CoinGecko plans, "interval=hourly" is not allowed for this endpoint.
+    // Using days=30 without an explicit interval returns data suitable for a 30‑day chart
+    // while staying within free plan limits.
+    const chartUrl = `${COINGECKO_BASE}/coins/${ZEC_ID}/market_chart?vs_currency=${VS_CURRENCY}&days=${CHART_DAYS}`;
 
     const [marketRes, chartRes] = await Promise.all([
       fetch(marketUrl, { headers, next: { revalidate: 300 } }),
       fetch(chartUrl, { headers, next: { revalidate: 300 } }),
     ]);
 
-        if (!marketRes.ok) {
+    if (!marketRes.ok) {
       const text = await marketRes.text().catch(() => '');
       console.error('[zec-market] marketRes not ok', marketRes.status, text);
+
+      // Surface common auth/rate-limit problems clearly.
+      if (marketRes.status === 401 || marketRes.status === 403 || marketRes.status === 429) {
+        return NextResponse.json(
+          {
+            error:
+              'CoinGecko rejected the request (auth or rate limit). Check COINGECKO_API_KEY, COINGECKO_KEY_HEADER, and your CoinGecko plan limits.',
+            status: marketRes.status,
+            details: text,
+          },
+          { status: 502 },
+        );
+      }
+
       return NextResponse.json(
         {
           error: 'Failed to fetch market data from CoinGecko',
@@ -42,8 +62,14 @@ export async function GET() {
     }
 
     if (!chartRes.ok) {
+      const text = await chartRes.text().catch(() => '');
+      console.error('[zec-market] chartRes not ok', chartRes.status, text);
       return NextResponse.json(
-        { error: 'Failed to fetch chart data from CoinGecko' },
+        {
+          error: 'Failed to fetch chart data from CoinGecko',
+          status: chartRes.status,
+          details: text,
+        },
         { status: 502 },
       );
     }

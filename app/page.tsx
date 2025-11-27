@@ -8,7 +8,7 @@ import BlocksTable from '@/components/BlocksTable';
 import ExplainerCard from '@/components/ExplainerCard';
 
 import PriceChart from '@/components/PriceChart';
-
+import MarketCarousel from '@/components/MarketCarousel';
 import CoinDetails from '@/components/CoinDetails';
 
 const formatNumber2 = (val: number) =>
@@ -104,13 +104,24 @@ export default async function Home() {
 
   return (
     <main className="container wide-layout">
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      {/* Desktop view - side by side */}
+      <section className="homepage-market-desktop">
         <div>
           <PriceChart />
         </div>
         <div>
           <CoinDetails />
         </div>
+      </section>
+
+      {/* Mobile view - carousel */}
+      <section className="homepage-market-mobile">
+        <MarketCarousel>
+          {[
+            <PriceChart key="chart" />,
+            <CoinDetails key="details" />
+          ]}
+        </MarketCarousel>
       </section>
 
       <section className="grid-2 mt-lg">

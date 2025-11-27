@@ -27,47 +27,64 @@ ChartJS.register(
   Legend
 );
 
+interface PricePoint {
+  timestamp: number;
+  price: number;
+}
+
 interface PriceData {
-  prices: [number, number][];
+  prices: PricePoint[];
 }
 
 export default function PriceChart() {
   const [chartData, setChartData] = useState<PriceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartHeight, setChartHeight] = useState(400);
 
   useEffect(() => {
     const fetchData = async () => {
-      const url = 'https://api.coingecko.com/api/v3/coins/zcash/market_chart?vs_currency=usd&days=30&interval=daily';
-      // Note: Demo API key header is omitted as it might not be available/needed for public free tier for simple requests, 
-      // or should be provided via env vars if strictly required. 
-      // The user provided snippet had a placeholder. I will try without first or use a public endpoint.
-      // The user's snippet: const url = 'https://api.coingecko.com/api/v3/coins/{id}/market_chart';
-
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Failed to fetch price data');
+        const response = await fetch('/api/zec-market', { cache: 'no-store' });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || !Array.isArray(data.priceSeries) || data.priceSeries.length === 0) {
+          const msg = data?.error || `Failed to fetch price data: HTTP ${response.status}`;
+          throw new Error(msg);
         }
-        const data = await response.json();
-        setChartData(data);
+        setChartData({ prices: data.priceSeries });
       } catch (err) {
         console.error(err);
-        setError('Could not load price chart');
+        const message = err instanceof Error ? err.message : 'Could not load price chart';
+        setError(message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
+
+    // Set responsive chart height
+    const updateChartHeight = () => {
+      if (window.innerWidth < 768) {
+        setChartHeight(250); // Mobile
+      } else if (window.innerWidth < 1024) {
+        setChartHeight(300); // Tablet
+      } else {
+        setChartHeight(400); // Desktop
+      }
+    };
+
+    updateChartHeight();
+    window.addEventListener('resize', updateChartHeight);
+    return () => window.removeEventListener('resize', updateChartHeight);
   }, []);
 
-  if (loading) return <div className="p-4 text-center text-gray-500">Loading chart...</div>;
-  if (error) return <div className="p-4 text-center text-red-500">{error}</div>;
+  if (loading) return <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>Loading chart...</div>;
+  if (error) return <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--danger)' }}>{error}</div>;
   if (!chartData) return null;
 
-  const prices = chartData.prices.map((item) => item[1]);
-  const dates = chartData.prices.map((item) => item[0]);
+  const prices = chartData.prices.map((item) => item.price);
+  const dates = chartData.prices.map((item) => item.timestamp);
 
   // Determine color based on trend (start vs end) like CoinGecko
   const isPositive = prices[prices.length - 1] >= prices[0];
@@ -84,7 +101,7 @@ export default function PriceChart() {
         borderColor: lineColor,
         backgroundColor: (context: ScriptableContext<'line'>) => {
           const ctx = context.chart.ctx;
-          const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+          const gradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
           gradient.addColorStop(0, gradientStart);
           gradient.addColorStop(1, gradientStop);
           return gradient;
@@ -126,7 +143,7 @@ export default function PriceChart() {
           },
           title: function (context: any) {
             const index = context[0]?.dataIndex ?? 0;
-            const timestamp = dates[index]; // CoinGecko provides ms since epoch
+            const timestamp = dates[index];
             const date = new Date(timestamp);
             return format(date, 'MMM d, yyyy');
           }
@@ -143,15 +160,18 @@ export default function PriceChart() {
       y: {
         position: 'right' as const,
         grid: {
-          display: false, // Remove horizontal grid lines
+          display: false,
         },
         ticks: {
+          font: {
+            size: chartHeight < 300 ? 10 : 12, // Smaller font on mobile
+          },
           callback: function (value: any) {
             return new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: 'USD',
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
             }).format(value as number);
           },
         }
@@ -165,11 +185,11 @@ export default function PriceChart() {
   };
 
   return (
-    <div className="w-full h-[500px] bg-white rounded-lg p-4 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-      <div className="flex justify-between items-center mb-4">
+    <div className="card price-chart-container">
+      <div className="price-chart-header">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">$ZEC Price Chart (30 Days)</h3>
-          <div className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-50 tracking-tight">
+          <h3 className="section-title" style={{ marginBottom: '0.5rem' }}>$ZEC Price Chart (30 Days)</h3>
+          <div className="price-chart-current">
             {new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: 'USD',
@@ -179,8 +199,12 @@ export default function PriceChart() {
           </div>
         </div>
       </div>
-      <div className="relative h-[420px] w-full">
+      <div className="price-chart-wrapper" style={{ height: `${chartHeight}px` }}>
         <Line data={data} options={options} />
+      </div>
+      <div className="price-chart-meta">
+        <span>Last 30 days, USD price</span>
+        <span className="muted">Live data from CoinGecko</span>
       </div>
     </div>
   );

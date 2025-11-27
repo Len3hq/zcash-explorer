@@ -29,7 +29,7 @@ export default async function BlocksPage() {
             Last {blocks.length} blocks on the {info.chain} chain
           </span>
         </div>
-        {blocks?.length ? <BlocksTable blocks={blocks} showAllColumns={true} /> : <></>}
+        {blocks?.length ? <BlocksTable blocks={blocks} /> : <></>}
       </section>
 
       <ExplainerCard

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { getBlock, getBlockHash } from '@/lib/zcashRpcClient';
 import { computeBlockSummary } from '@/lib/utils';
 import ExplainerCard from '@/components/ExplainerCard';
+import CopyButton from '@/components/CopyButton';
 
 export default async function BlockPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -47,11 +48,12 @@ export default async function BlockPage({ params }: { params: { id: string } }) 
             <div className="detail-item">
               <div className="key-label">Hash</div>
               <div className="key-value kv-mono">
-                <span className="hash-with-copy">
+                <div className="hash-with-copy">
                   <span className="hash-truncate" title={summary.hash}>
                     {summary.hash}
                   </span>
-                </span>
+                  <CopyButton text={summary.hash} label="Copy block hash" />
+                </div>
               </div>
             </div>
 
@@ -92,11 +94,14 @@ export default async function BlockPage({ params }: { params: { id: string } }) 
               <div className="key-label">Previous block</div>
               <div className="key-value kv-mono">
                 {block.previousblockhash ? (
-                  <Link href={`/block/${block.previousblockhash}`} className="hash-with-copy">
-                    <span className="hash-truncate" title={block.previousblockhash}>
-                      {block.previousblockhash}
-                    </span>
-                  </Link>
+                  <div className="hash-with-copy">
+                    <Link href={`/block/${block.previousblockhash}`}>
+                      <span className="hash-truncate" title={block.previousblockhash}>
+                        {block.previousblockhash}
+                      </span>
+                    </Link>
+                    <CopyButton text={block.previousblockhash} label="Copy previous block hash" />
+                  </div>
                 ) : (
                   <span className="muted">N/A</span>
                 )}
@@ -107,11 +112,14 @@ export default async function BlockPage({ params }: { params: { id: string } }) 
               <div className="key-label">Next block</div>
               <div className="key-value kv-mono">
                 {block.nextblockhash ? (
-                  <Link href={`/block/${block.nextblockhash}`} className="hash-with-copy">
-                    <span className="hash-truncate" title={block.nextblockhash}>
-                      {block.nextblockhash}
-                    </span>
-                  </Link>
+                  <div className="hash-with-copy">
+                    <Link href={`/block/${block.nextblockhash}`}>
+                      <span className="hash-truncate" title={block.nextblockhash}>
+                        {block.nextblockhash}
+                      </span>
+                    </Link>
+                    <CopyButton text={block.nextblockhash} label="Copy next block hash" />
+                  </div>
                 ) : (
                   <span className="muted">Tip</span>
                 )}
@@ -208,11 +216,14 @@ export default async function BlockPage({ params }: { params: { id: string } }) 
                   return (
                     <tr key={txid}>
                       <td className="hash">
-                        <Link href={`/tx/${txid}`} className="hash-with-copy">
-                          <span className="hash-truncate" title={txid}>
-                            {txid}
-                          </span>
-                        </Link>
+                        <div className="hash-with-copy">
+                          <Link href={`/tx/${txid}`}>
+                            <span className="hash-truncate" title={txid}>
+                              {txid}
+                            </span>
+                          </Link>
+                          <CopyButton text={txid} label="Copy transaction ID" />
+                        </div>
                       </td>
                     </tr>
                   );

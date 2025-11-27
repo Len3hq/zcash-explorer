@@ -1,22 +1,58 @@
-// Zcash RPC Client with fallback support
-// When using GetBlock:
-// - ZCASH_RPC_URL should be the full Zcash endpoint URL from their dashboard
-// - ZCASH_RPC_FALLBACK_URL is the fallback endpoint if primary fails
-// - ZCASH_GETBLOCK_API_KEY is optional: if provided, it will be sent as x-api-key
+// Zcash RPC Client
+// Configure primary and optional fallback Zcash JSON-RPC endpoints via
+// ZCASH_RPC_URL (primary) and ZCASH_RPC_FALLBACK_URL (secondary).
+// If you are using a provider such as GetBlock, point ZCASH_RPC_URL at the
+// full endpoint URL from their dashboard. Optionally, set ZCASH_GETBLOCK_API_KEY
+// if your provider requires an API key header.
 
 const ZCASH_RPC_URL = process.env.ZCASH_RPC_URL;
-const ZCASH_RPC_FALLBACK_URL = process.env.ZCASH_RPC_FALLBACK_URL || 'https://go.getblock.io/9fd49adc25574cefbc9efd703be5d1b6/';
+const ZCASH_RPC_FALLBACK_URL = process.env.ZCASH_RPC_FALLBACK_URL;
 const ZCASH_GETBLOCK_API_KEY = process.env.ZCASH_GETBLOCK_API_KEY;
 
-if (!ZCASH_RPC_URL) {
-  console.warn('[zcashRpcClient] Warning: ZCASH_RPC_URL not set. Will use fallback endpoint.');
+if (!ZCASH_RPC_URL && !ZCASH_RPC_FALLBACK_URL) {
+  console.warn(
+    '[zcashRpcClient] Warning: neither ZCASH_RPC_URL nor ZCASH_RPC_FALLBACK_URL is set. RPC calls will fail until at least one is configured.',
+  );
+}
+
+function shouldTryFallback(codeOrStatus: unknown, message: string | undefined): boolean {
+  const msg = message || '';
+  const codeStr = typeof codeOrStatus === 'number' ? String(codeOrStatus) : String(codeOrStatus || '');
+
+  // HTTP statuses that are typically transient or rate-limit related
+  const transientHttpStatuses = new Set(['429', '502', '503', '504']);
+  if (transientHttpStatuses.has(codeStr)) return true;
+
+  // Common network / transport error codes from Node/undici
+  const transientNetworkCodes = new Set([
+    'UND_ERR_CONNECT_TIMEOUT',
+    'ECONNREFUSED',
+    'ENOTFOUND',
+    'ETIMEDOUT',
+    'ECONNRESET',
+  ]);
+  if (transientNetworkCodes.has(codeStr)) return true;
+
+  // Fallback heuristics based on error message
+  if (/rate limit/i.test(msg)) return true;
+  if (/Too Many Requests/i.test(msg)) return true;
+  if (/UND_ERR_CONNECT_TIMEOUT/.test(msg)) return true;
+
+  return false;
 }
 
 async function rpcCall(method: string, params: any[] = []): Promise<any> {
-  const endpoints = [ZCASH_RPC_URL, ZCASH_RPC_FALLBACK_URL].filter(Boolean);
+  const endpoints: { url: string; label: 'primary' | 'fallback' }[] = [];
+
+  if (ZCASH_RPC_URL) {
+    endpoints.push({ url: ZCASH_RPC_URL, label: 'primary' });
+  }
+  if (ZCASH_RPC_FALLBACK_URL && ZCASH_RPC_FALLBACK_URL !== ZCASH_RPC_URL) {
+    endpoints.push({ url: ZCASH_RPC_FALLBACK_URL, label: 'fallback' });
+  }
 
   if (endpoints.length === 0) {
-    throw new Error('No RPC endpoints configured');
+    throw new Error('No Zcash RPC endpoint configured (ZCASH_RPC_URL and ZCASH_RPC_FALLBACK_URL are empty)');
   }
 
   const body = {
@@ -35,62 +71,91 @@ async function rpcCall(method: string, params: any[] = []): Promise<any> {
     headers['x-api-key'] = ZCASH_GETBLOCK_API_KEY;
   }
 
-  let lastError: any;
+  const errorMessages: string[] = [];
 
-  for (let i = 0; i < endpoints.length; i++) {
-    const endpoint = endpoints[i];
-    if (!endpoint) continue; // Skip if endpoint is undefined
-
-    const isFallback = i > 0;
+  for (const { url, label } of endpoints) {
+    let lastError: any;
 
     try {
-      if (isFallback) {
-        console.log(`[zcashRpcClient] Trying fallback endpoint for ${method}`);
-      }
-
-      const res = await fetch(endpoint, {
+      const res = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
       });
 
       if (!res.ok) {
-        const text = await res?.text();
-        throw new Error(`RPC HTTP error ${res.status}: ${text}`);
+        const text = await res.text().catch(() => '');
+        const status = res.status;
+        const snippet = text.slice(0, 512);
+
+        const httpError = new Error(`RPC HTTP error ${status} (${label}): ${snippet}`);
+
+        // Decide whether we should try the fallback endpoint on HTTP errors
+        if (label === 'primary' && endpoints.length > 1 && shouldTryFallback(status, snippet)) {
+          console.warn('[zcashRpcClient] Primary RPC HTTP error, trying fallback', {
+            method,
+            status,
+          });
+          errorMessages.push(httpError.message);
+          continue; // try next endpoint
+        }
+
+        throw httpError;
       }
 
-      const json = await res?.json();
+      const json = await res.json().catch((e: any) => {
+        throw new Error(`Failed to parse RPC JSON response from ${label}: ${e?.message || String(e)}`);
+      });
+
       if (json?.error) {
-        throw new Error(`RPC error: ${JSON.stringify(json.error)}`);
-      }
+        const rpcErrorMsg = `RPC error from ${label} endpoint: ${JSON.stringify(json.error)}`;
 
-      if (isFallback) {
-        console.log(`[zcashRpcClient] Fallback successful for ${method}`);
+        if (label === 'primary' && endpoints.length > 1 && shouldTryFallback(undefined, rpcErrorMsg)) {
+          console.warn('[zcashRpcClient] Primary RPC returned error, trying fallback', {
+            method,
+            error: json.error,
+          });
+          errorMessages.push(rpcErrorMsg);
+          continue; // try next endpoint
+        }
+
+        throw new Error(rpcErrorMsg);
       }
 
       return json?.result;
-
     } catch (err: any) {
       lastError = err;
       const message = err?.message || String(err);
       const code = (err as any)?.code || (err as any)?.cause?.code || 0;
-      console.error(`[zcashRpcClient] RPC call failed for endpoint ${i + 1}/${endpoints.length}`, {
-        url: endpoint,
+
+      console.error('[zcashRpcClient] RPC call failed', {
+        url,
         method,
+        endpoint: label,
         code,
-        message
+        message,
       });
 
-      // Continue to next endpoint if available
-      if (i < endpoints.length - 1) {
-        continue;
+      // If primary fails with a transient / rate-limit style error, fall through to fallback
+      if (label === 'primary' && endpoints.length > 1 && shouldTryFallback(code, message)) {
+        console.warn('[zcashRpcClient] Primary RPC endpoint failed, trying fallback', {
+          method,
+          code,
+        });
+        errorMessages.push(message);
+        continue; // try next endpoint
       }
+
+      errorMessages.push(message);
+
+      // For fallback (or non-transient errors), do not keep looping
+      console.error('[zcashRpcClient] RPC endpoint failed', { method, endpoint: label, lastError: message });
+      throw new Error(`RPC call failed: ${message}`);
     }
   }
 
-  // All endpoints failed
-  console.error('[zcashRpcClient] All RPC endpoints failed', { method, lastError: lastError?.message });
-  throw new Error(`RPC call failed: ${lastError?.message || 'Unknown error'}`);
+  console.error('[zcashRpcClient] All RPC endpoints failed', { method, errors: errorMessages });
+  throw new Error(`RPC call failed for ${method}: ${errorMessages.join(' | ') || 'Unknown error'}`);
 }
 
 export async function getBlockchainInfo() {
@@ -121,5 +186,19 @@ export async function getNetworkHashPs(blocks: number = 120, height: number = -1
 
 export async function getChainTxStats(nblocks?: number) {
   // Get chain transaction statistics - returns txrate (tx/s), txcount, window stats
-  return rpcCall('getchaintxstats', nblocks ? [nblocks] : []);
+  // Not all providers expose this method; in that case we degrade gracefully.
+  try {
+    return await rpcCall('getchaintxstats', nblocks ? [nblocks] : []);
+  } catch (e: any) {
+    const message = e?.message || '';
+
+    // If the RPC method is not available or the endpoint is unreachable, treat as optional
+    if (message.includes('Method not found') || message.includes('RPC HTTP error 404')) {
+      console.warn('[zcashRpcClient] getchaintxstats not supported on current endpoint, returning null');
+      return null;
+    }
+
+    // Re-throw unexpected errors so callers can decide how to handle them
+    throw e;
+  }
 }

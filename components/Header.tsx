@@ -11,6 +11,7 @@ export default function Header() {
   const [query, setQuery] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchPlaceholder, setSearchPlaceholder] = useState('Search by block height, block hash, or transaction ID');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -21,6 +22,19 @@ export default function Header() {
 
     document.documentElement.dataset.theme = initial;
     setTheme(initial);
+
+    // Set responsive placeholder
+    const updatePlaceholder = () => {
+      if (window.innerWidth < 768) {
+        setSearchPlaceholder('Search blocks or transactions');
+      } else {
+        setSearchPlaceholder('Search by block height, block hash, or transaction ID');
+      }
+    };
+
+    updatePlaceholder();
+    window.addEventListener('resize', updatePlaceholder);
+    return () => window.removeEventListener('resize', updatePlaceholder);
   }, []);
 
   // Close mobile menu on route change
@@ -86,6 +100,10 @@ export default function Header() {
     }
   };
 
+  const handleBackdropClick = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className="topbar">
       <div className="topbar-main">
@@ -114,6 +132,10 @@ export default function Header() {
           </button>
         </div>
       </div>
+
+      {/* Mobile menu backdrop */}
+      {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={handleBackdropClick}></div>}
+
       <nav className={`nav-tabs ${mobileMenuOpen ? 'nav-tabs-mobile-open' : ''}`}>
         <Link href="/" className={`nav-tab ${activeTab === 'home' ? 'nav-tab-active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
           Overview
@@ -135,7 +157,7 @@ export default function Header() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by block height, block hash, or transaction ID"
+            placeholder={searchPlaceholder}
             required
           />
           <button type="submit" className="button-primary">

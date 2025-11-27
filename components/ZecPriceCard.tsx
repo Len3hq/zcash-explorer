@@ -89,12 +89,16 @@ export default function ZecPriceCard() {
     async function load() {
       try {
         const res = await fetch('/api/zec-market', { cache: 'no-store' });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json = (await res.json()) as ZecMarketData | { error?: string };
-        if ('error' in json) {
-          throw new Error(json.error || 'Failed to load market data');
+        const json = (await res.json().catch(() => null)) as
+          | ZecMarketData
+          | { error?: string; requiresApiKey?: boolean; status?: number; details?: string }
+          | null;
+
+        if (!res.ok || !json || 'error' in json) {
+          const msg =
+            (json && 'error' in json && json.error) ||
+            (res.ok ? 'Failed to load ZEC market data.' : `HTTP ${res.status}`);
+          throw new Error(msg);
         }
         if (!cancelled) {
           setData(json as ZecMarketData);
@@ -102,7 +106,8 @@ export default function ZecPriceCard() {
         }
       } catch (e) {
         if (!cancelled) {
-          setError('Unable to load ZEC market data right now.');
+          const message = e instanceof Error ? e.message : 'Unable to load ZEC market data right now.';
+          setError(message);
         }
       } finally {
         if (!cancelled) {
@@ -206,7 +211,7 @@ export default function ZecPriceCard() {
           </div>
 
           <div className="price-chart-meta">
-            <span>Last 7 days, USD price</span>
+            <span>Last 30 days, USD price</span>
             <span className="muted">Live data from CoinGecko</span>
           </div>
         </div>

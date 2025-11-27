@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { decodeTransactionWithPrevouts } from '@/lib/utils';
 import RawModal from '@/components/RawModal';
 import ExplainerCard from '@/components/ExplainerCard';
+import CopyButton from '@/components/CopyButton';
 
 export default async function TransactionPage({ params }: { params: { txid: string } }) {
   const { txid } = params;
@@ -35,9 +36,10 @@ export default async function TransactionPage({ params }: { params: { txid: stri
             <div className="detail-item">
               <div className="key-label">TxID</div>
               <div className="key-value kv-mono">
-                <span className="hash-with-copy">
+                <div className="hash-with-copy">
                   <span className="hash-truncate">{tx.txid}</span>
-                </span>
+                  <CopyButton text={tx.txid} label="Copy transaction ID" />
+                </div>
               </div>
             </div>
 
@@ -72,8 +74,8 @@ export default async function TransactionPage({ params }: { params: { txid: stri
                   ? 'Coinbase'
                   : (tx.vjoinsplit && tx.vjoinsplit.length) ||
                     (typeof tx.valueBalance === 'number' && tx.valueBalance !== 0)
-                  ? 'Shielded'
-                  : 'Transparent'}
+                    ? 'Shielded'
+                    : 'Transparent'}
               </div>
             </div>
 
@@ -88,9 +90,12 @@ export default async function TransactionPage({ params }: { params: { txid: stri
               <div className="detail-item">
                 <div className="key-label">Block</div>
                 <div className="key-value kv-mono">
-                  <Link href={`/block/${tx.blockhash}`} className="hash-with-copy">
-                    <span className="hash-truncate">{tx.blockhash}</span>
-                  </Link>
+                  <div className="hash-with-copy">
+                    <Link href={`/block/${tx.blockhash}`}>
+                      <span className="hash-truncate">{tx.blockhash}</span>
+                    </Link>
+                    <CopyButton text={tx.blockhash} label="Copy block hash" />
+                  </div>
                 </div>
               </div>
             )}
@@ -154,9 +159,10 @@ export default async function TransactionPage({ params }: { params: { txid: stri
                   <td>{o.n}</td>
                   <td className="hash">
                     {o.addresses && o.addresses.length ? (
-                      <span className="hash-with-copy">
+                      <div className="hash-with-copy">
                         <span className="hash-truncate">{o.addresses[0]}</span>
-                      </span>
+                        <CopyButton text={o.addresses[0]} label="Copy address" />
+                      </div>
                     ) : (
                       <span className="muted">(no address)</span>
                     )}

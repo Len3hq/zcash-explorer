@@ -1,36 +1,16 @@
-"use client";
-
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
-import { format } from 'date-fns';
 
 interface CoinData {
-  id: string;
   symbol: string;
   name: string;
-  image: string;
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number;
-  fully_diluted_valuation: number;
-  total_volume: number;
-  high_24h: number;
-  low_24h: number;
-  price_change_24h: number;
-  price_change_percentage_24h: number;
-  market_cap_change_24h: number;
-  market_cap_change_percentage_24h: number;
-  circulating_supply: number;
-  total_supply: number;
-  max_supply: number;
-  ath: number;
-  ath_change_percentage: number;
-  ath_date: string;
-  atl: number;
-  atl_change_percentage: number;
-  atl_date: string;
-  last_updated: string;
+  currentPriceUsd: number | null;
+  marketCapUsd: number | null;
+  volume24hUsd: number | null;
+  totalSupply: number | null;
+  maxSupply: number | null;
+  change24hPct: number | null;
 }
 
 export default function CoinDetails() {
@@ -40,22 +20,31 @@ export default function CoinDetails() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=zcash';
-
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Failed to fetch coin details');
+        const response = await fetch('/api/zec-market', { cache: 'no-store' });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data) {
+          const msg = data?.error || `Failed to fetch coin details: HTTP ${response.status}`;
+          throw new Error(msg);
         }
-        const data = await response.json();
-        if (data && data.length > 0) {
-          setCoinData(data[0]);
+        if (data && data.symbol && data.name) {
+          setCoinData({
+            symbol: data.symbol,
+            name: data.name,
+            currentPriceUsd: data.currentPriceUsd ?? null,
+            marketCapUsd: data.marketCapUsd ?? null,
+            volume24hUsd: data.volume24hUsd ?? null,
+            totalSupply: data.totalSupply ?? null,
+            maxSupply: data.maxSupply ?? null,
+            change24hPct: data.change24hPct ?? null,
+          });
         } else {
           setError('No data found');
         }
       } catch (err) {
         console.error(err);
-        setError('Could not load coin details');
+        const message = err instanceof Error ? err.message : 'Could not load coin details';
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -68,18 +57,22 @@ export default function CoinDetails() {
   if (error) return <div className="h-[500px] flex items-center justify-center text-red-500 bg-white rounded-lg shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">{error}</div>;
   if (!coinData) return null;
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(val);
-  const formatNumber = (val: number) => new Intl.NumberFormat('en-US').format(val);
-  const formatPercentage = (val: number) => `${val.toFixed(2)}%`;
+  const formatCurrency = (val: number | null) =>
+    val == null
+      ? '–'
+      : new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(val);
+  const formatNumber = (val: number | null) =>
+    val == null ? '–' : new Intl.NumberFormat('en-US').format(val);
+  const formatPercentage = (val: number | null) =>
+    val == null ? '–' : `${val.toFixed(2)}%`;
 
-  const isPriceUp = coinData.price_change_percentage_24h > 0;
-  const isPriceDown = coinData.price_change_percentage_24h < 0;
+  const isPriceUp = (coinData.change24hPct ?? 0) > 0;
+  const isPriceDown = (coinData.change24hPct ?? 0) < 0;
 
   return (
     <div className="card h-full">
@@ -107,7 +100,7 @@ export default function CoinDetails() {
                   : 'text-gray-900 dark:text-gray-50'
               }`}
           >
-            {formatCurrency(coinData.current_price)}
+            {formatCurrency(coinData.currentPriceUsd)}
             <span
               className={`text-lg md:text-xl font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 ${isPriceUp
                   ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
@@ -117,15 +110,15 @@ export default function CoinDetails() {
                 }`}
             >
               {isPriceUp ? '▲' : isPriceDown ? '▼' : ''}
-              {formatPercentage(Math.abs(coinData.price_change_percentage_24h))}
+              {formatPercentage(Math.abs(coinData.change24hPct ?? 0))}
             </span>
           </div>
         </div>
 
-        <DetailRow label="Market Cap" value={formatCurrency(coinData.market_cap)} />
-        <DetailRow label="Volume (24h)" value={formatCurrency(coinData.total_volume)} />
-        <DetailRow label="Total Supply" value={`${formatNumber(coinData.total_supply)} ${coinData.symbol.toUpperCase()}`} />
-        <DetailRow label="Max Supply" value={`${formatNumber(coinData.max_supply)} ${coinData.symbol.toUpperCase()}`} />
+        <DetailRow label="Market Cap" value={formatCurrency(coinData.marketCapUsd)} />
+        <DetailRow label="Volume (24h)" value={formatCurrency(coinData.volume24hUsd)} />
+        <DetailRow label="Total Supply" value={`${formatNumber(coinData.totalSupply)} ${coinData.symbol.toUpperCase()}`} />
+        <DetailRow label="Max Supply" value={`${formatNumber(coinData.maxSupply)} ${coinData.symbol.toUpperCase()}`} />
       </div>
 
       <div className="mt-auto pt-4 text-xs text-gray-400 text-center">
