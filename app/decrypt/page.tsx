@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import RawModal from '@/components/RawModal';
 import ExplainerCard from '@/components/ExplainerCard';
+import WalletScanModal from '@/components/WalletScanModal';
 
 interface OutputInfo {
   protocol: string;
@@ -36,14 +37,28 @@ function formatZec(zats: number): string {
   return (zats / 100_000_000).toFixed(8);
 }
 
+interface ScanResult {
+  success: boolean;
+  blocksScanned: number;
+  transactionsFound: number;
+  transactions: TransactionDetails[];
+}
+
 export default function DecryptPage() {
   const [activeTab, setActiveTab] = useState<'tx' | 'wallet'>('tx');
   const [txid, setTxid] = useState('');
   const [ufvk, setUfvk] = useState('');
+  const [walletUfvk, setWalletUfvk] = useState('');
   const [height, setHeight] = useState('');
+  const [blockHeightOption, setBlockHeightOption] = useState<'specific' | 'last1hr' | 'walletBirthday'>('last1hr');
+  const [specificBlocks, setSpecificBlocks] = useState('');
+  const [walletBirthdayHeight, setWalletBirthdayHeight] = useState('');
   const [loading, setLoading] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionDetails | null>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -190,7 +205,61 @@ export default function DecryptPage() {
         )}
 
         {activeTab === 'wallet' && (
-          <div className="decrypt-form decrypt-panel" role="tabpanel" aria-label="Scan wallet">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setWalletError(null);
+              setScanResult(null);
+              setWalletLoading(true);
+
+              try {
+                const payload: {
+                  ufvk: string;
+                  blockHeightOption: string;
+                  specificBlocks?: string;
+                  walletBirthdayHeight?: number;
+                } = {
+                  ufvk: walletUfvk.trim(),
+                  blockHeightOption,
+                };
+
+                if (blockHeightOption === 'specific' && specificBlocks) {
+                  payload.specificBlocks = specificBlocks;
+                }
+
+                if (blockHeightOption === 'walletBirthday' && walletBirthdayHeight) {
+                  const height = parseInt(walletBirthdayHeight, 10);
+                  if (!isNaN(height) && height > 0) {
+                    payload.walletBirthdayHeight = height;
+                  }
+                }
+
+                const res = await fetch('/api/scan-wallet', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                  setWalletError(typeof data?.error === 'string' ? data.error : 'Failed to scan wallet');
+                  return;
+                }
+
+                setScanResult(data as ScanResult);
+              } catch (err: unknown) {
+                setWalletError(err instanceof Error ? err.message : 'Unexpected error while scanning');
+              } finally {
+                setWalletLoading(false);
+              }
+            }}
+            className="decrypt-form decrypt-panel"
+            role="tabpanel"
+            aria-label="Scan wallet"
+          >
             <div className="decrypt-form-grid">
               <div className="decrypt-form-field">
                 <label className="key-label" htmlFor="wallet-ufvk-input">
@@ -199,10 +268,11 @@ export default function DecryptPage() {
                 <textarea
                   id="wallet-ufvk-input"
                   className="search-input"
-                  value={ufvk}
-                  onChange={(e) => setUfvk(e.target.value)}
+                  value={walletUfvk}
+                  onChange={(e) => setWalletUfvk(e.target.value)}
                   placeholder="uview1... (mainnet) or uviewtest1... (testnet)"
                   rows={3}
+                  required
                 />
                 <p className="decrypt-helper">
                   Use a view-only key from your wallet; this flow is designed for inspecting activity, not spending.
@@ -210,30 +280,73 @@ export default function DecryptPage() {
               </div>
 
               <div className="decrypt-form-field">
-                <label className="key-label" htmlFor="wallet-height-input">
-                  Starting block height (optional)
-                </label>
-                <input
-                  id="wallet-height-input"
-                  className="search-input"
-                  type="number"
-                  min={0}
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                  placeholder="Use a recent height to limit how far back the scan goes"
-                />
-                <p className="decrypt-helper">
-                  A lower height means a deeper scan through the chain; a higher height is faster but only includes more
-                  recent notes.
+                <label className="key-label">Block Height Range</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="blockHeightOption"
+                      value="last1hr"
+                      checked={blockHeightOption === 'last1hr'}
+                      onChange={(e) => setBlockHeightOption(e.target.value as 'last1hr')}
+                    />
+                    <span>Last 1 hour (~48 blocks)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="blockHeightOption"
+                      value="specific"
+                      checked={blockHeightOption === 'specific'}
+                      onChange={(e) => setBlockHeightOption(e.target.value as 'specific')}
+                    />
+                    <span>Specific block heights</span>
+                  </label>
+                  {blockHeightOption === 'specific' && (
+                    <input
+                      className="search-input"
+                      type="text"
+                      value={specificBlocks}
+                      onChange={(e) => setSpecificBlocks(e.target.value)}
+                      placeholder="e.g., 3148327,3148328 or 3148327-3148330"
+                      style={{ marginLeft: '1.5rem' }}
+                    />
+                  )}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="blockHeightOption"
+                      value="walletBirthday"
+                      checked={blockHeightOption === 'walletBirthday'}
+                      onChange={(e) => setBlockHeightOption(e.target.value as 'walletBirthday')}
+                    />
+                    <span>From wallet birthday</span>
+                  </label>
+                  {blockHeightOption === 'walletBirthday' && (
+                    <input
+                      className="search-input"
+                      type="number"
+                      min={0}
+                      value={walletBirthdayHeight}
+                      onChange={(e) => setWalletBirthdayHeight(e.target.value)}
+                      placeholder="Enter wallet birthday block height"
+                      style={{ marginLeft: '1.5rem' }}
+                      required
+                    />
+                  )}
+                </div>
+                <p className="decrypt-helper" style={{ marginTop: '0.5rem' }}>
+                  Choose how many blocks to scan. Note: Maximum 100 blocks per scan.
                 </p>
               </div>
             </div>
             <div className="decrypt-form-actions">
-              <button type="button" className="button-primary" disabled>
-                Wallet scan coming soon
+              <button type="submit" className="button-primary" disabled={walletLoading}>
+                {walletLoading ? 'Scanning…' : 'Scan wallet'}
               </button>
+              {walletError && <span className="decrypt-error">{walletError}</span>}
             </div>
-          </div>
+          </form>
         )}
       </section>
 
@@ -332,6 +445,8 @@ export default function DecryptPage() {
           },
         ]}
       />
+
+      <WalletScanModal result={scanResult} onClose={() => setScanResult(null)} />
     </main>
   );
 }

@@ -162,6 +162,10 @@ export async function getBlockchainInfo() {
   return rpcCall('getblockchaininfo');
 }
 
+export async function getBlockCount() {
+  return rpcCall('getblockcount');
+}
+
 export async function getBlockHash(height: number) {
   return rpcCall('getblockhash', [height]);
 }

@@ -1459,6 +1459,27 @@ html[data-theme='dark'] .nav-tab-active {
   resize: vertical;
 }
 
+.scan-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem;
+  background: rgba(243, 183, 36, 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(243, 183, 36, 0.15);
+}
+
+.scan-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+html[data-theme='dark'] .scan-summary {
+  background: rgba(243, 183, 36, 0.1);
+  border-color: rgba(243, 183, 36, 0.2);
+}
+
 @media (min-width: 900px) {
   .decrypt-form-grid {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
