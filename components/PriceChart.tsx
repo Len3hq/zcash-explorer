@@ -63,14 +63,14 @@ export default function PriceChart() {
 
     fetchData();
 
-    // Set responsive chart height
+    // Set responsive chart height - reduced for better page aesthetics
     const updateChartHeight = () => {
       if (window.innerWidth < 768) {
-        setChartHeight(250); // Mobile
+        setChartHeight(200); // Mobile - reduced from 250
       } else if (window.innerWidth < 1024) {
-        setChartHeight(300); // Tablet
+        setChartHeight(220); // Tablet - reduced from 300
       } else {
-        setChartHeight(400); // Desktop
+        setChartHeight(300); // Desktop - reduced from 400
       }
     };
 
@@ -184,27 +184,34 @@ export default function PriceChart() {
     }
   };
 
+  // Calculate percentage change
+  const priceChange = ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100;
+  const isPositiveChange = priceChange >= 0;
+
   return (
     <div className="card price-chart-container">
       <div className="price-chart-header">
         <div>
-          <h3 className="section-title" style={{ marginBottom: '0.5rem' }}>$ZEC Price Chart (30 Days)</h3>
-          <div className="price-chart-current">
-            {new Intl.NumberFormat('en-US', {
-              style: 'currency',
-              currency: 'USD',
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }).format(prices[prices.length - 1])}
+          <h3 className="section-title" style={{ marginBottom: '0.25rem' }}>ZEC Price (30 Days)</h3>
+          <p className="text-xs text-muted" style={{ marginBottom: '0.75rem' }}>Live market data powered by CoinGecko</p>
+          <div className="flex items-baseline gap-3">
+            <div className="price-chart-current">
+              {new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(prices[prices.length - 1])}
+            </div>
+            <div className={`price-change-text ${isPositiveChange ? 'positive' : 'negative'}`}>
+              {isPositiveChange ? '▲' : '▼'}
+              {Math.abs(priceChange).toFixed(2)}% (30d)
+            </div>
           </div>
         </div>
       </div>
       <div className="price-chart-wrapper" style={{ height: `${chartHeight}px` }}>
         <Line data={data} options={options} />
-      </div>
-      <div className="price-chart-meta">
-        <span>Last 30 days, USD price</span>
-        <span className="muted">Live data from CoinGecko</span>
       </div>
     </div>
   );

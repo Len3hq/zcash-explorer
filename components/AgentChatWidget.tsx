@@ -36,6 +36,7 @@ export default function AgentChatWidget() {
           cursor: 'pointer',
           transition: 'all 0.3s ease',
         }}
+        className="agent-toggle-btn"
         onMouseEnter={(e) => {
           e.currentTarget.style.backgroundColor = '#1e40af';
           e.currentTarget.style.transform = 'scale(1.05)';
@@ -62,7 +63,7 @@ export default function AgentChatWidget() {
             />
           )}
         </div>
-        <span>{open ? 'Close Zcash Agent' : 'Ask Zcash Agent'}</span>
+        <span className="agent-toggle-text">{open ? 'Close Zcash Agent' : 'Ask Zcash Agent'}</span>
       </button>
 
       {/* Popup chat container */}
@@ -70,12 +71,12 @@ export default function AgentChatWidget() {
         <div
           style={{
             position: 'fixed',
-            right: '1.5rem',
+            right: '1rem',
             bottom: '4.5rem',
             width: '420px',
             height: '520px',
-            maxWidth: '100vw',
-            maxHeight: '80vh',
+            maxWidth: 'calc(100vw - 2rem)',
+            maxHeight: 'calc(100vh - 6rem)',
             zIndex: 40,
             borderRadius: '1rem',
             overflow: 'hidden',
@@ -84,11 +85,12 @@ export default function AgentChatWidget() {
               '0 24px 60px rgba(15, 23, 42, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.25)',
             animation: 'slideUp 0.3s ease-out',
           }}
+          className="agent-chat-popup"
         >
           <ChatClient onNewMessage={() => setHasNewMessage(true)} />
         </div>
       )}
-      
+
       <style jsx>{`
         @keyframes slideUp {
           from {
@@ -107,6 +109,27 @@ export default function AgentChatWidget() {
           }
           50% {
             opacity: 0.5;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .agent-chat-popup {
+            right: 0.5rem !important;
+            bottom: 4rem !important;
+            left: 0.5rem !important;
+            width: auto !important;
+            max-height: calc(100vh - 5rem) !important;
+          }
+
+          .agent-toggle-btn {
+            right: 0.75rem !important;
+            bottom: 0.75rem !important;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.8rem !important;
+          }
+
+          .agent-toggle-text {
+            display: none;
           }
         }
       `}</style>

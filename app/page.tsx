@@ -154,8 +154,8 @@ export default async function Home() {
           <StatItem
             icon="fa-solid fa-bolt"
             label="Approx TPS"
-            value={accurateTps !== null ? `${accurateTps.toFixed(2)} tx/s` : (approxTps ? `${approxTps.toFixed(2)} tx/s` : '–')}
-            tooltip="Average transactions per second over the last 120 blocks (~5 hours). Calculated using getchaintxstats RPC method."
+            value="–"
+            tooltip="Transactions Per Second (TPS) measures the network's transaction processing capacity. This metric varies based on network activity and block size."
           />
           <StatItem
             icon="fa-solid fa-cubes"

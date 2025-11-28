@@ -61,11 +61,11 @@ export default function CoinDetails() {
     val == null
       ? '–'
       : new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(val);
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(val);
   const formatNumber = (val: number | null) =>
     val == null ? '–' : new Intl.NumberFormat('en-US').format(val);
   const formatPercentage = (val: number | null) =>
@@ -88,30 +88,17 @@ export default function CoinDetails() {
 
       <div className="key-value-grid">
         <div className="col-span-full mb-4">
-          {/* Clarify that this is the coin price, per ZEC */}
-          <div className="key-label mb-1">
-            Price per {coinData.symbol.toUpperCase()}
+          <div className="key-label mb-2">
+            Current Price
           </div>
-          <div
-            className={`text-4xl md:text-5xl font-extrabold flex items-center gap-3 tracking-tight ${isPriceUp
-                ? 'text-green-600 dark:text-green-400'
-                : isPriceDown
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-900 dark:text-gray-50'
-              }`}
-          >
-            {formatCurrency(coinData.currentPriceUsd)}
-            <span
-              className={`text-lg md:text-xl font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 ${isPriceUp
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                  : isPriceDown
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                }`}
-            >
-              {isPriceUp ? '▲' : isPriceDown ? '▼' : ''}
-              {formatPercentage(Math.abs(coinData.change24hPct ?? 0))}
-            </span>
+          <div className="flex items-baseline gap-3">
+            <div className="text-3xl md:text-4xl font-extrabold tracking-tight text-heading">
+              {formatCurrency(coinData.currentPriceUsd)}
+            </div>
+            <div className={`price-change-text ${isPriceUp ? 'positive' : isPriceDown ? 'negative' : 'neutral'}`}>
+              {isPriceUp ? '▲' : isPriceDown ? '▼' : '●'}
+              {formatPercentage(Math.abs(coinData.change24hPct ?? 0))} (24h)
+            </div>
           </div>
         </div>
 
