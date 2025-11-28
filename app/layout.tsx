@@ -3,6 +3,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import AgentChatWidget from '@/components/AgentChatWidget';
 import Footer from '@/components/Footer';
+import Preloader from '@/components/Preloader';
 
 export const metadata: Metadata = {
   title: 'Zcash Explorer',
@@ -35,6 +36,7 @@ export default function RootLayout({
         />
       </head>
       <body className="theme-zec">
+        <Preloader />
         <Header />
         {children}
         <Footer />

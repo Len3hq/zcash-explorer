@@ -46,7 +46,14 @@ export default function Footer() {
               </a>
             </div>
             <div className="footer-links-row" aria-hidden="true">
-              <i className="fa-brands fa-x-twitter footer-icon" />
+              <a
+                href="https://x.com/len3_x"
+                target="_blank"
+                rel="noreferrer"
+                className="footer-link"
+              >
+                <i className="fa-brands fa-x-twitter footer-icon" />
+              </a>
               <a
                 href="https://github.com/Len3hq/zcash-explorer"
                 target="_blank"

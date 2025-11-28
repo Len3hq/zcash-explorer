@@ -4,9 +4,15 @@ import { useState, useEffect } from 'react';
 
 interface RawModalProps {
   data: any;
+  buttonClassName?: string;
+  buttonLabel?: string;
 }
 
-export default function RawModal({ data }: RawModalProps) {
+export default function RawModal({
+  data,
+  buttonClassName = 'button-secondary',
+  buttonLabel = 'View raw tx'
+}: RawModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -30,18 +36,13 @@ export default function RawModal({ data }: RawModalProps) {
 
   return (
     <>
-      <section className="card mt-lg">
-        <div className="card-header">
-          <div className="section-title">Raw Transaction</div>
-          <button
-            type="button"
-            className="button-secondary"
-            onClick={() => setIsOpen(true)}
-          >
-            View raw tx
-          </button>
-        </div>
-      </section>
+      <button
+        type="button"
+        className={buttonClassName}
+        onClick={() => setIsOpen(true)}
+      >
+        {buttonLabel}
+      </button>
 
       {isOpen && (
         <div

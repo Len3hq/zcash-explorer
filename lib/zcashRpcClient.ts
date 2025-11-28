@@ -188,11 +188,11 @@ export async function getNetworkHashPs(blocks: number = 120, height: number = -1
   return rpcCall('getnetworkhashps', [blocks, height]);
 }
 
-export async function getChainTxStats(nblocks?: number) {
+export async function getChainTxStats(nblocks?: number, blockHash?: string) {
   // Get chain transaction statistics - returns txrate (tx/s), txcount, window stats
   // Not all providers expose this method; in that case we degrade gracefully.
   try {
-    return await rpcCall('getchaintxstats', nblocks ? [nblocks] : []);
+    return await rpcCall('getchaintxstats', nblocks ? [nblocks, blockHash] : []);
   } catch (e: any) {
     const message = e?.message || '';
 

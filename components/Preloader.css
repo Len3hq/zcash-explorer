@@ -1,0 +1,146 @@
+/* Preloader Styles */
+.preloader-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-card) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeOut 0.5s ease-out 1.2s forwards;
+}
+
+.preloader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    animation: scaleIn 0.6s ease-out;
+}
+
+.preloader-logo {
+    width: 120px;
+    height: 120px;
+    color: var(--zec-gold);
+}
+
+.preloader-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 20px rgba(243, 183, 36, 0.4));
+}
+
+.preloader-shield {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.preloader-z {
+    animation: drawZ 1.5s ease-in-out infinite;
+    stroke-dasharray: 150;
+    stroke-dashoffset: 150;
+}
+
+.preloader-text {
+    text-align: center;
+}
+
+.preloader-text h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.75rem;
+    color: var(--text-heading);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.02em;
+}
+
+.preloader-dots {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    height: 20px;
+}
+
+.preloader-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--zec-gold);
+    animation: bounce 1.4s ease-in-out infinite;
+}
+
+.preloader-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.preloader-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.preloader-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes drawZ {
+    0% {
+        stroke-dashoffset: 150;
+    }
+
+    50% {
+        stroke-dashoffset: 0;
+    }
+
+    100% {
+        stroke-dashoffset: -150;
+    }
+}
+
+@keyframes bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Dark mode adjustments */
+html[data-theme='dark'] .preloader-overlay {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+}

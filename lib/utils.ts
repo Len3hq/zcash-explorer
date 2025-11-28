@@ -1,4 +1,4 @@
-import { getBlockHash, getBlock, getRawTransaction } from './zcashRpcClient';
+import { getBlockHash, getBlock, getRawTransaction, getChainTxStats, getBlockCount } from './zcashRpcClient';
 
 export function formatRelativeTime(epochSeconds: number): string {
   const now = Math.floor(Date.now() / 1000);
@@ -68,12 +68,12 @@ export async function decodeTransactionWithPrevouts(txid: string) {
 
   const outputs = Array.isArray(tx.vout)
     ? tx.vout.map((v: any) => ({
-        n: v.n,
-        value: v.value,
-        type: v.scriptPubKey && v.scriptPubKey.type,
-        addresses:
-          (v.scriptPubKey && (v.scriptPubKey.addresses || (v.scriptPubKey.address ? [v.scriptPubKey.address] : []))) || [],
-      }))
+      n: v.n,
+      value: v.value,
+      type: v.scriptPubKey && v.scriptPubKey.type,
+      addresses:
+        (v.scriptPubKey && (v.scriptPubKey.addresses || (v.scriptPubKey.address ? [v.scriptPubKey.address] : []))) || [],
+    }))
     : [];
 
   const outputTotal = outputs.reduce((sum: number, o: any) => sum + (o.value || 0), 0);
@@ -170,3 +170,5 @@ export async function computeBlockSummary(block: any) {
     size: block.size || block.strippedsize || null,
   };
 }
+
+
