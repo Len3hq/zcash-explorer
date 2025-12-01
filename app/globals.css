@@ -2277,10 +2277,6 @@ html[data-theme='dark'] .tx-list-item {
 }
 
 .raw-tx-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 50;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -2288,10 +2284,12 @@ html[data-theme='dark'] .tx-list-item {
   border-radius: 999px;
   font-weight: 600;
   color: var(--text-heading);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .raw-tx-btn:hover {
@@ -2302,11 +2300,10 @@ html[data-theme='dark'] .tx-list-item {
 
 @media (max-width: 768px) {
   .raw-tx-btn {
-    bottom: 5rem;
-    /* Above footer/nav */
-    right: 1rem;
     padding: 0.6rem 1.2rem;
     font-size: var(--font-sm);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
   }
 }
 
