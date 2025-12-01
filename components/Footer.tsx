@@ -1,36 +1,42 @@
+'use client';
+
+import { useState } from 'react';
+import DonationModal from './DonationModal';
+
 export default function Footer() {
   const year = new Date().getFullYear();
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
 
   return (
-    <footer className="site-footer">
-      <div className="container footer-inner">
-        <div className="footer-top">
-          {/* Left: brand + tagline */}
-          <div className="footer-col footer-brand">
-            <div className="footer-brand-row">
-              <div className="footer-logo-mark" aria-hidden="true">
-                <span className="footer-logo-dot" />
+    <>
+      <footer className="site-footer">
+        <div className="container footer-inner">
+          <div className="footer-top">
+            {/* Left: brand + tagline */}
+            <div className="footer-col footer-brand">
+              <div className="footer-brand-row">
+                <div className="footer-logo-mark" aria-hidden="true">
+                  <span className="footer-logo-dot" />
+                </div>
+                <div className="footer-brand-text">
+                  <span className="footer-title">Zcash Explorer</span>
+                  <span className="footer-subtitle">Lightweight Zcash chain insights</span>
+                </div>
               </div>
-              <div className="footer-brand-text">
-                <span className="footer-title">Zcash Explorer</span>
-                <span className="footer-subtitle">Lightweight Zcash chain insights</span>
-              </div>
+              <div className="footer-pill">Open data • Zero‑knowledge ready • Minimal UI</div>
             </div>
-            <div className="footer-pill">Open data • Zero‑knowledge ready • Minimal UI</div>
-          </div>
 
-          {/* Center: support button */}
-          <div className="footer-col footer-center">
-            <a
-              href="https://github.com/Len3hq/zcash-explorer"
-              target="_blank"
-              rel="noreferrer"
-              className="footer-support-btn"
-            >
-              <i className="fa-brands fa-github" aria-hidden="true" />
-              <span>Contribute on GitHub</span>
-            </a>
-          </div>
+            {/* Center: support button */}
+            <div className="footer-col footer-center">
+              <button
+                type="button"
+                onClick={() => setIsDonationModalOpen(true)}
+                className="footer-support-btn"
+              >
+                <i className="fa-solid fa-heart" aria-hidden="true" />
+                <span>Support Our Work</span>
+              </button>
+            </div>
 
           {/* Right: powered by + built with */}
           <div className="footer-col footer-right">
@@ -94,5 +100,11 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    
+    <DonationModal 
+      isOpen={isDonationModalOpen} 
+      onClose={() => setIsDonationModalOpen(false)} 
+    />
+    </>
   );
 }

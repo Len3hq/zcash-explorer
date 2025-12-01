@@ -125,11 +125,7 @@ export default function AgentChatWidget() {
             right: 0.75rem !important;
             bottom: 0.75rem !important;
             padding: 0.6rem 1rem !important;
-            font-size: 0.8rem !important;
-          }
-
-          .agent-toggle-text {
-            display: none;
+            font-size: 0.75rem !important;
           }
         }
       `}</style>
