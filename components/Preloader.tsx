@@ -21,25 +21,9 @@ export default function Preloader() {
         <div className="preloader-overlay">
             <div className="preloader-content">
                 <div className="preloader-logo">
-                    <svg viewBox="0 0 100 100" className="preloader-svg">
-                        {/* Zcash-inspired shield/block icon */}
-                        <path
-                            d="M50 10 L80 25 L80 65 L50 90 L20 65 L20 25 Z"
-                            className="preloader-shield"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                        />
-                        <path
-                            d="M35 40 L65 40 L50 50 L65 60 L35 60"
-                            className="preloader-z"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+                    <div className="preloader-logo-mark">
+                        <div className="preloader-logo-dot" />
+                    </div>
                 </div>
                 <div className="preloader-text">
                     <h2>Zcash Explorer</h2>
