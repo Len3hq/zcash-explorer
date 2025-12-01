@@ -129,7 +129,7 @@ export default async function Home() {
           <div>
             <div className="key-label">
               <i className="fa-solid fa-layer-group stat-icon" aria-hidden="true"></i>
-              Height
+              Latest Height
             </div>
             <div className="card-main-value">
               <span className="hash-truncate">{info.blocks}</span>

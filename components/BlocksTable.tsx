@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import CopyButton from './CopyButton';
 
 interface Block {
@@ -17,6 +18,8 @@ interface BlocksTableProps {
 }
 
 export default function BlocksTable({ blocks, showMobileCards = true }: BlocksTableProps) {
+  const [showRelativeTime, setShowRelativeTime] = useState(true);
+
   if (!blocks || blocks.length === 0) {
     return (
       <div className="table-wrapper">
@@ -36,13 +39,28 @@ export default function BlocksTable({ blocks, showMobileCards = true }: BlocksTa
             <tr>
               <th>Height</th>
               <th>Block Hash</th>
-              <th>Time</th>
+              <th>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>Time</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowRelativeTime(!showRelativeTime)}
+                    className="time-toggle-btn"
+                    title={showRelativeTime ? 'Show actual time' : 'Show relative time'}
+                  >
+                    <i className="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </th>
               <th>Transactions</th>
             </tr>
           </thead>
           <tbody>
             {blocks.map((block) => {
               const timeAgo = formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true });
+              const actualTime = format(new Date(block.time * 1000), 'MMM dd, yyyy HH:mm:ss');
+              const displayTime = showRelativeTime ? timeAgo : actualTime;
+              
               return (
                 <tr key={block.height}>
                   <td>
@@ -60,7 +78,7 @@ export default function BlocksTable({ blocks, showMobileCards = true }: BlocksTa
                       <CopyButton text={block.hash} label="Copy block hash" />
                     </div>
                   </td>
-                  <td className="timestamp">{timeAgo}</td>
+                  <td className="timestamp">{displayTime}</td>
                   <td>
                     <span className="tx-count-pill">
                       <i className="fa-solid fa-receipt" aria-hidden="true"></i>
@@ -79,6 +97,9 @@ export default function BlocksTable({ blocks, showMobileCards = true }: BlocksTa
         <div className="blocks-mobile-cards">
           {blocks.map((block) => {
             const timeAgo = formatDistanceToNow(new Date(block.time * 1000), { addSuffix: true });
+            const actualTime = format(new Date(block.time * 1000), 'MMM dd, yyyy HH:mm:ss');
+            const displayTime = showRelativeTime ? timeAgo : actualTime;
+            
             return (
               <div key={block.height} className="block-card-mobile">
                 <div className="block-card-header">
@@ -104,7 +125,7 @@ export default function BlocksTable({ blocks, showMobileCards = true }: BlocksTa
                 </div>
                 <div className="block-card-time">
                   <i className="fa-regular fa-clock" aria-hidden="true"></i>
-                  <span className="timestamp">{timeAgo}</span>
+                  <span className="timestamp">{displayTime}</span>
                 </div>
               </div>
             );

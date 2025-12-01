@@ -3064,3 +3064,26 @@ html[data-theme='light'] .donation-message {
     padding: 1rem;
   }
 }
+
+/* Time Toggle Button */
+.time-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.time-toggle-btn:hover {
+  color: var(--zec-gold);
+  background: rgba(243, 183, 36, 0.1);
+}
+
+.time-toggle-btn i {
+  font-size: 0.875rem;
+}

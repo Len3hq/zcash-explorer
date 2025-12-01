@@ -93,13 +93,6 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
   return (
     <main className="container wide-layout">
       <div className="flex flex-col gap-6">
-        <div className="page-header-flex">
-          <div className="page-header-main">
-            <h1 className="page-title">Transactions</h1>
-            <p className="text-muted text-sm">Latest network activity</p>
-          </div>
-        </div>
-
         <section className="card table-card">
           <div className="card-header">
             <div className="section-title">Recent Transactions</div>
