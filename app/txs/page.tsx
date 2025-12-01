@@ -2,34 +2,21 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 10;
 
 import Link from 'next/link';
-import TransactionPagination from '@/components/TransactionPagination';
 import { getBlockchainInfo } from '@/lib/zcashRpcClient';
 import { fetchRecentBlocks } from '@/lib/utils';
 import ExplainerCard from '@/components/ExplainerCard';
 import HashDisplay from '@/components/HashDisplay';
 import { format } from 'date-fns';
 
-interface TransactionsPageProps {
-  searchParams: { page?: string };
-}
-
-export default async function TransactionsPage({ searchParams }: TransactionsPageProps) {
-  const page = parseInt(searchParams.page || '1', 10);
-  const pageSize = 10;
-
-  // We fetch a larger window of blocks to ensure we find enough transactions
-  // This is an approximation since we don't have a DB index.
-  // Page 1: Latest 25 blocks
-  // Page 2: Blocks 25-50 from tip, etc.
-  // This might result in varying number of txs per page, but it's consistent for navigation.
+export default async function TransactionsPage() {
+  // Fetch a window of blocks to display recent transactions
   const blocksPerFetch = 25;
-  const offset = (page - 1) * blocksPerFetch;
+  const maxTransactions = 25;
 
   const info = await getBlockchainInfo();
   const bestHeight = info.blocks;
-  const startHeight = bestHeight - offset;
 
-  const recentBlocks = await fetchRecentBlocks(startHeight, blocksPerFetch);
+  const recentBlocks = await fetchRecentBlocks(bestHeight, blocksPerFetch);
 
   const txs: any[] = [];
   for (const b of recentBlocks) {
@@ -84,11 +71,8 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
     }
   }
 
-  // We slice to pageSize, but we might have fewer if blocks were empty.
-  // In a real app with DB, we'd query with LIMIT/OFFSET.
-  // Here we just show what we found in this block window.
-  const displayedTxs = txs.slice(0, pageSize);
-  const hasNextPage = startHeight > 0; // Simple check
+  // Display the most recent transactions up to the limit
+  const displayedTxs = txs.slice(0, maxTransactions);
 
   return (
     <main className="container wide-layout">
@@ -96,10 +80,10 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
         <section className="card table-card">
           <div className="card-header">
             <div className="section-title">Recent Transactions</div>
-            <span className="card-subtext">Page {page}</span>
+            <span className="card-subtext">Latest {displayedTxs.length} transactions</span>
           </div>
           <p className="text-muted text-sm mb-4 px-4">
-            This table displays the most recent transactions from the latest blocks. Each transaction shows its type (Coinbase, Shielded, or Transparent), block information, and transfer details.
+            This table displays the {maxTransactions} most recent transactions from the latest blocks. Each transaction shows its type (Coinbase, Shielded, or Transparent), block information, and transfer details.
           </p>
 
           {/* Desktop Table */}
@@ -163,7 +147,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                 {displayedTxs.length === 0 && (
                   <tr>
                     <td colSpan={8} className="text-center py-8 text-muted">
-                      No transactions found in this block range. Try next page.
+                      No transactions found in recent blocks.
                     </td>
                   </tr>
                 )}
@@ -246,13 +230,10 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             ))}
             {displayedTxs.length === 0 && (
               <div className="text-center py-8 text-muted">
-                No transactions found in this block range. Try next page.
+                No transactions found in recent blocks.
               </div>
             )}
           </div>
-
-          {/* Pagination Controls */}
-          <TransactionPagination currentPage={page} hasNextPage={hasNextPage} />
         </section>
 
         <ExplainerCard
