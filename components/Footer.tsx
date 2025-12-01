@@ -93,7 +93,7 @@ export default function Footer() {
               rel="noreferrer"
               className="footer-link"
             >
-              Christian
+              Realist
             </a>
             .
           </span>
