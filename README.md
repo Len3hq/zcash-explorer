@@ -258,7 +258,7 @@ This project is licensed under the **MIT License** - see the LICENSE file for de
 ## 👥 Team
 
 Built with ❤️ by:
-- **[Daniel](https://twitter.com/danny_4reel)** - Lead Developer
+- **[Daniel](https://twitter.com/danny_4reel)** - Developer
 - **[Realist](https://twitter.com/_christian_obi)** - Developer
 
 ## 🔗 Links
