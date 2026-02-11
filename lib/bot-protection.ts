@@ -16,26 +16,38 @@ const BANNED_UA_PATTERNS = [
     /dotbot/i,
     /rogue-bot/i,
     /bytespider/i,
+    /headless/i,
+    /puppeteer/i,
+    /selenium/i,
+    /phantomjs/i,
 ];
 
-const BAN_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_API_REQUESTS = 100; // 30 requests per minute for API
-const MAX_PAGE_REQUESTS = 200; // 60 requests per minute for Pages
+// Honeypot paths that should never be accessed by a legitimate user/browser
+const HONEYPOT_PATHS = [
+    '/wp-login.php',
+    '/.env',
+    '/.git/config',
+    '/id_rsa',
+    '/aws/credentials',
+    '/dump.sql',
+    '/database.sql',
+    '/admin/login',
+    '/bitrix/admin',
+];
+
+const BAN_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours (stricter ban for detected malice)
 
 interface ClientRecord {
-    count: number;
-    windowStart: number;
     isBanned: boolean;
     bannedUntil: number;
-    violationCount: number;
+    reason: string;
 }
 
-// In-memory store (Note: This is per-instance, use Redis for multi-instance/production)
+// In-memory store
 const clientRecords = new Map<string, ClientRecord>();
 
 // Cleanup interval
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 let lastCleanup = Date.now();
 
 function cleanup() {
@@ -44,15 +56,7 @@ function cleanup() {
     lastCleanup = now;
 
     Array.from(clientRecords.entries()).forEach(([ip, record]) => {
-        // Keep banned records until ban expires
-        if (record.isBanned) {
-            if (now > record.bannedUntil) {
-                clientRecords.delete(ip);
-            }
-            return;
-        }
-        // Remove old records
-        if (now - record.windowStart > RATE_LIMIT_WINDOW_MS * 2) {
+        if (now > record.bannedUntil) {
             clientRecords.delete(ip);
         }
     });
@@ -70,77 +74,72 @@ function getClientIP(request: NextRequest): string {
     return request.ip || 'unknown';
 }
 
-function isBotUserAgent(request: NextRequest): boolean {
-    const ua = request.headers.get('user-agent') || '';
-    if (!ua) return true; // Block empty UA
-    return BANNED_UA_PATTERNS.some((pattern) => pattern.test(ua));
+function banIP(ip: string, reason: string) {
+    clientRecords.set(ip, {
+        isBanned: true,
+        bannedUntil: Date.now() + BAN_DURATION_MS,
+        reason,
+    });
 }
 
-export type RateLimitResult = {
+export type ProtectionResult = {
     allowed: boolean;
-    reason?: 'bot_ua' | 'banned' | 'rate_limit';
-    remaining: number;
-    retryAfter?: number; // seconds
+    reason?: 'bot_ua' | 'banned' | 'suspicious_headers' | 'honeypot';
+    retryAfter?: number;
 };
 
-export function checkBotProtection(request: NextRequest): RateLimitResult {
+export function checkBotProtection(request: NextRequest): ProtectionResult {
     cleanup();
 
     const ip = getClientIP(request);
-    const { pathname } = request.nextUrl;
     const now = Date.now();
+    const ua = request.headers.get('user-agent') || '';
+    const { pathname } = request.nextUrl;
 
-    // 1. Check User-Agent
-    if (isBotUserAgent(request)) {
-        return { allowed: false, reason: 'bot_ua', remaining: 0 };
-    }
-
-    // 2. Get or create record
-    let record = clientRecords.get(ip);
-    if (!record) {
-        record = { count: 0, windowStart: now, isBanned: false, bannedUntil: 0, violationCount: 0 };
-        clientRecords.set(ip, record);
-    }
-
-    // 3. Check Ban Status
-    if (record.isBanned) {
+    // 1. Check Ban Status
+    const record = clientRecords.get(ip);
+    if (record && record.isBanned) {
         if (now < record.bannedUntil) {
             const retryAfter = Math.ceil((record.bannedUntil - now) / 1000);
-            return { allowed: false, reason: 'banned', remaining: 0, retryAfter };
+            return { allowed: false, reason: 'banned', retryAfter };
         }
-        // Ban expired
-        record.isBanned = false;
-        record.bannedUntil = 0;
-        record.count = 0;
-        record.windowStart = now;
+        clientRecords.delete(ip); // Ban expired
     }
 
-    // 4. Rate Limiting Logic
-    // Reset window if needed
-    if (now - record.windowStart > RATE_LIMIT_WINDOW_MS) {
-        record.count = 0;
-        record.windowStart = now;
+    // 2. Honeypot check (Instant Ban)
+    if (HONEYPOT_PATHS.some(path => pathname.includes(path))) {
+        banIP(ip, `Accessing honeypot: ${pathname}`);
+        return { allowed: false, reason: 'honeypot', retryAfter: 86400 };
     }
 
-    record.count++;
+    // 3. User-Agent check
+    if (!ua || BANNED_UA_PATTERNS.some((pattern) => pattern.test(ua))) {
+        return { allowed: false, reason: 'bot_ua' };
+    }
 
-    const isApi = pathname.startsWith('/api/');
-    const liimt = isApi ? MAX_API_REQUESTS : MAX_PAGE_REQUESTS;
+    // 4. Header Heuristics
+    // API routes typically come from browsers (with Referer/Origin) or trusted clients.
+    // Missing Accept-Language or excessively short Accept headers are suspicious.
+    const acceptLanguage = request.headers.get('accept-language');
 
-    if (record.count > liimt) {
-        record.violationCount++;
+    // Very crude heuristic: legitimate browsers almost always send accept-language
+    if (!acceptLanguage) {
+        // Allow if it's a known search engine? (handled by UA check mostly)
+        // For this app, strict mode:
+        return { allowed: false, reason: 'suspicious_headers' };
+    }
 
-        // Ban if multiple violations or extreme excess
-        if (record.violationCount >= 3 || record.count > liimt * 2) {
-            record.isBanned = true;
-            record.bannedUntil = now + BAN_DURATION_MS;
-            const retryAfter = Math.ceil(BAN_DURATION_MS / 1000);
-            return { allowed: false, reason: 'banned', remaining: 0, retryAfter };
+    // API specific checks
+    if (pathname.startsWith('/api/')) {
+        const referer = request.headers.get('referer');
+        const origin = request.headers.get('origin');
+
+        // If accessing API directly without referer (e.g. curl/postman), block it
+        // Unless you want to allow dev tools, but for bot protection on public app:
+        if (!referer && !origin) {
+            return { allowed: false, reason: 'suspicious_headers' };
         }
-
-        const resetIn = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - record.windowStart)) / 1000);
-        return { allowed: false, reason: 'rate_limit', remaining: 0, retryAfter: resetIn };
     }
 
-    return { allowed: true, remaining: liimt - record.count };
+    return { allowed: true };
 }

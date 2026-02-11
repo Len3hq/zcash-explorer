@@ -21,33 +21,41 @@ export function middleware(request: NextRequest) {
     const protection = checkBotProtection(request);
 
     if (!protection.allowed) {
-      const retryAfter = protection.retryAfter || 60;
+      const retryAfter = protection.retryAfter || 86400;
 
-      if (protection.reason === 'bot_ua') {
-        return new NextResponse(JSON.stringify({ error: 'Forbidden', message: 'Bot access deny' }), {
+      if (protection.reason === 'bot_ua' || protection.reason === 'suspicious_headers') {
+        return new NextResponse(JSON.stringify({ error: 'Forbidden', message: 'Access Denied (Bot/Security Check Failed)' }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      return new NextResponse(
-        JSON.stringify({
-          error: 'Too Many Requests',
-          message: protection.reason === 'banned' ? 'IP banned due to abuse' : 'Rate limit exceeded',
-          retryAfter,
-        }),
-        {
-          status: 429,
+      if (protection.reason === 'honeypot') {
+        // Ban enacted
+        return new NextResponse(JSON.stringify({ error: 'Banned', message: 'Access Denied (Security Violation)' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (protection.reason === 'banned') {
+        return new NextResponse(JSON.stringify({
+          error: 'Banned',
+          message: 'Your IP has been banned due to suspicious activity.',
+          retryAfter
+        }), {
+          status: 403,
           headers: {
             'Content-Type': 'application/json',
-            'Retry-After': String(retryAfter),
+            'Retry-After': String(retryAfter)
           },
-        }
-      );
+        });
+      }
     }
   }
 
   return NextResponse.next();
+
 }
 
 export const config = {
