@@ -1,5 +1,4 @@
-import { getBlockHash, getBlock, getRawTransaction, getBlockCount } from './zcashRpcClient';
-
+import { getBlockHash, getBlock, getRawTransaction, getChainTxStats, getBlockCount } from './zcashRpcClient';
 
 export function formatRelativeTime(epochSeconds: number): string {
   const now = Math.floor(Date.now() / 1000);

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 10;
 
-import { getBlockchainInfo, getNetworkHashPs } from '@/lib/zcashRpcClient';
+import { getBlockchainInfo, getNetworkHashPs, getChainTxStats } from '@/lib/zcashRpcClient';
 import { fetchRecentBlocks } from '@/lib/utils';
 import StatsCard, { StatItem } from '@/components/StatsCard';
 import BlocksTable from '@/components/BlocksTable';
@@ -62,16 +62,14 @@ export default async function Home() {
   const approxTps = timeSpan > 0 ? txTotal / timeSpan : 0;
   const blocksPerHour = timeSpan > 0 ? (recentBlocks.length * 3600) / timeSpan : 0;
 
-
   // Get accurate TPS from getchaintxstats (120 blocks = ~5 hours window)
   let accurateTps = null;
-  // try {
-  //   const txStats = await getChainTxStats(120);
-  //   accurateTps = txStats?.txrate || null;
-  // } catch (e) {
-  //   console.error('[Home] Failed to fetch chain tx stats', e);
-  // }
-
+  try {
+    const txStats = await getChainTxStats(120);
+    accurateTps = txStats?.txrate || null;
+  } catch (e) {
+    console.error('[Home] Failed to fetch chain tx stats', e);
+  }
 
   let networkHash = null;
   try {
