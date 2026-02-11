@@ -188,21 +188,21 @@ export async function getNetworkHashPs(blocks: number = 120, height: number = -1
   return rpcCall('getnetworkhashps', [blocks, height]);
 }
 
-export async function getChainTxStats(nblocks?: number, blockHash?: string) {
-  // Get chain transaction statistics - returns txrate (tx/s), txcount, window stats
-  // Not all providers expose this method; in that case we degrade gracefully.
-  try {
-    return await rpcCall('getchaintxstats', nblocks ? [nblocks, blockHash] : []);
-  } catch (e: any) {
-    const message = e?.message || '';
+// export async function getChainTxStats(nblocks?: number, blockHash?: string) {
+//   // Get chain transaction statistics - returns txrate (tx/s), txcount, window stats
+//   // Not all providers expose this method; in that case we degrade gracefully.
+//   try {
+//     return await rpcCall('getchaintxstats', nblocks ? [nblocks, blockHash] : []);
+//   } catch (e: any) {
+//     const message = e?.message || '';
 
-    // If the RPC method is not available or the endpoint is unreachable, treat as optional
-    if (message.includes('Method not found') || message.includes('RPC HTTP error 404')) {
-      console.warn('[zcashRpcClient] getchaintxstats not supported on current endpoint, returning null');
-      return null;
-    }
+//     // If the RPC method is not available or the endpoint is unreachable, treat as optional
+//     if (message.includes('Method not found') || message.includes('RPC HTTP error 404')) {
+//       console.warn('[zcashRpcClient] getchaintxstats not supported on current endpoint, returning null');
+//       return null;
+//     }
 
-    // Re-throw unexpected errors so callers can decide how to handle them
-    throw e;
-  }
-}
+//     // Re-throw unexpected errors so callers can decide how to handle them
+//     throw e;
+//   }
+// }
