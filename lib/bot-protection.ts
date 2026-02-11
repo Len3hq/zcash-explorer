@@ -20,8 +20,8 @@ const BANNED_UA_PATTERNS = [
 
 const BAN_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_API_REQUESTS = 30; // 30 requests per minute for API
-const MAX_PAGE_REQUESTS = 60; // 60 requests per minute for Pages
+const MAX_API_REQUESTS = 100; // 30 requests per minute for API
+const MAX_PAGE_REQUESTS = 200; // 60 requests per minute for Pages
 
 interface ClientRecord {
     count: number;
