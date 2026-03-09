@@ -1,0 +1,24 @@
+# Zcash Explorer – robots.txt
+# Allow search engine crawlers on public pages, disallow API and admin paths.
+
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Crawl-delay: 2
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Crawl-delay: 2
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /wp-admin
+Disallow: /wp-login.php
+Disallow: /.env
+Disallow: /xmlrpc.php
+Disallow: /admin
+Disallow: /phpmyadmin
+Disallow: /config.php
+Crawl-delay: 10
