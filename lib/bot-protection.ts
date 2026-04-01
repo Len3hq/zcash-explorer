@@ -7,9 +7,10 @@
  * Design notes:
  * - Uses a sliding-window counter stored in a Map (suitable for single-process
  *   deployments). For multi-instance deployments, swap the Map for Redis.
- * - Separate rate-limit tiers for regular pages vs. API endpoints.
+ * - Separate rate-limit tiers for regular pages vs. API endpoints, plus
+ *   per-endpoint stricter limits for expensive routes.
  * - Known bot/scraper user-agent patterns are blocked outright.
- * - Clients that hit the honeypot path are flagged and blocked.
+ * - Clients that hit the honeypot path are permanently flagged and blocked.
  */
 
 // ---------------------------------------------------------------------------
@@ -28,18 +29,27 @@ export interface BotProtectionConfig {
   apiRateLimit: RateLimitConfig;
   /** Rate limit for page routes */
   pageRateLimit: RateLimitConfig;
-  /** How long (seconds) a flagged IP stays blocked */
+  /** Per-endpoint stricter limits for expensive API routes */
+  endpointLimits: Record<string, number>;
+  /** How long (seconds) a temp-blocked IP stays blocked */
   blockDurationSeconds: number;
-  /** Paths that act as honeypots — any client hitting these is auto-blocked */
+  /** Paths that act as honeypots — any client hitting these is permanently blocked */
   honeypotPaths: string[];
   /** Whether to check for missing/suspicious headers */
   enforceHeaders: boolean;
 }
 
 export const DEFAULT_CONFIG: BotProtectionConfig = {
-  apiRateLimit: { maxRequests: 60, windowSeconds: 60 },   // 60 req/min per IP
+  apiRateLimit: { maxRequests: 60, windowSeconds: 60 },    // 60 req/min per IP
   pageRateLimit: { maxRequests: 120, windowSeconds: 60 },  // 120 req/min per IP
-  blockDurationSeconds: 600,                                // 10-minute block
+  endpointLimits: {
+    '/api/scan-wallet': 5,      // Scans up to 100 blocks + spawns crypto process
+    '/api/decrypt': 10,         // Spawns child decryptor process per call
+    '/api/search': 20,          // Triggers live RPC lookups
+    '/api/zec-market': 20,
+    '/api/blockchain-info': 30,
+  },
+  blockDurationSeconds: 600,   // 10-minute temp block
   honeypotPaths: [
     '/wp-admin',
     '/wp-login.php',
@@ -53,61 +63,112 @@ export const DEFAULT_CONFIG: BotProtectionConfig = {
 };
 
 // ---------------------------------------------------------------------------
-// Known bot / scraper user-agent patterns
+// Known bot / scraper user-agent patterns — block on match
 // ---------------------------------------------------------------------------
 
 const BOT_UA_PATTERNS: RegExp[] = [
-  // Generic crawlers & scrapers
-  /scrapy/i,
-  /python-requests/i,
-  /python-urllib/i,
-  /httpx/i,
-  /aiohttp/i,
-  /go-http-client/i,
-  /java\//i,
+  // ── Programmatic HTTP libraries ──────────────────────────────────────────
+  /^python-requests\//i,
+  /^python-urllib\//i,
+  /^python\//i,
+  /^curl\//i,
+  /^wget\//i,
+  /^go-http-client\//i,
+  /^java\//i,
+  /^ruby\//i,
+  /^php\//i,
+  /^perl\//i,
+  /^r\b/i,                       // R language HTTP client
   /libwww-perl/i,
-  /wget/i,
-  /curl/i,
-  /axios/i,
-  /node-fetch/i,
-  /undici/i,
+  /^lwp-/i,
+  /^axios\//i,
+  /^node-fetch\//i,
+  /^node-http\//i,
+  /^undici\//i,
+  /^got\//i,
+  /^superagent\//i,
+  /^aiohttp\//i,
+  /^httpx\//i,
+  /^requests\//i,
+  /pycurl/i,
+  /scrapy/i,
+  /^okhttp\//i,
+  /apache-httpclient/i,
+  /java\.net\.http/i,
+  /^powershell\//i,
+  /^winhttp/i,
   /http\.rb/i,
   /mechanize/i,
   /scraperapi/i,
   /phantomjs/i,
   /headlesschrome/i,
+  /httpie/i,
 
-  // SEO / marketing bots (unwanted aggressive scrapers)
-  /semrush/i,
-  /ahrefs/i,
+  // ── Security / recon scanners ────────────────────────────────────────────
+  /masscan/i,
+  /\bnmap\b/i,
+  /nikto/i,
+  /sqlmap/i,
+  /dirbuster/i,
+  /\bdirb\b/i,
+  /gobuster/i,
+  /feroxbuster/i,
+  /ffuf/i,
+  /wfuzz/i,
+  /zgrab/i,
+  /nuclei/i,
+  /wpscan/i,
+  /burpsuite/i,
+  /\bzap\b/i,
+  /acunetix/i,
+  /nessus/i,
+  /openvas/i,
+  /hydra/i,
+  /medusa/i,
+
+  // ── SEO / data harvesting bots ───────────────────────────────────────────
+  /semrushbot/i,
+  /ahrefsbot/i,
   /mj12bot/i,
   /dotbot/i,
   /rogerbot/i,
   /dataforseo/i,
   /blexbot/i,
   /megaindex/i,
-  /serpstat/i,
+  /serpstatbot/i,
+  /seokicks/i,
   /zoominfobot/i,
   /petalbot/i,
+  /bytespider/i,
+  /exabot/i,
+  /seznambot/i,
+  /ia_archiver/i,               // Wayback Machine archiver
+  /archive\.org_bot/i,
+  /proximic/i,
 
-  // Vulnerability scanners
-  /nmap/i,
-  /nikto/i,
-  /sqlmap/i,
-  /dirbuster/i,
-  /gobuster/i,
-  /nuclei/i,
-  /masscan/i,
-  /wpscan/i,
-  /zgrab/i,
-  /httpie/i,
+  // ── AI training / content scrapers ──────────────────────────────────────
+  /claudebot/i,
+  /gptbot/i,
+  /ccbot/i,
+  /anthropic-ai/i,
+  /google-extended/i,
+  /amazonbot/i,
+  /applebot/i,
+  /cohere-ai/i,
+  /omgili/i,
+  /diffbot/i,
+  /imagesiftbot/i,
+
+  // ── Generic catch-all (keep last to not shadow specific patterns) ────────
+  /\b(bot|crawler|spider|scraper|harvest)\b/i,
 ];
 
-// Legitimate bots we allow (Googlebot, Bingbot, etc.)
+// Legitimate bots that are allowed through (search engines, social previews,
+// uptime monitors). These are matched BEFORE the block list above.
 const ALLOWED_BOT_PATTERNS: RegExp[] = [
   /googlebot/i,
   /bingbot/i,
-  /slurp/i,           // Yahoo
+  /slurp/i,             // Yahoo
   /duckduckbot/i,
   /baiduspider/i,
   /yandexbot/i,
@@ -147,7 +208,6 @@ export class RateLimiter {
     const entry = this.windows.get(key);
 
     if (!entry || now - entry.windowStart >= this.config.windowSeconds) {
-      // Start a new window
       this.windows.set(key, { count: 1, windowStart: now });
       return {
         allowed: true,
@@ -183,19 +243,20 @@ export class RateLimiter {
     }
   }
 
-  /** Visible for testing. */
   get size(): number {
     return this.windows.size;
   }
 }
 
 // ---------------------------------------------------------------------------
-// Blocked-IP tracker (auto-block after honeypot hit or repeated violations)
+// Blocked-IP tracker
 // ---------------------------------------------------------------------------
 
 interface BlockRecord {
   blockedAt: number;
   reason: string;
+  /** Permanent blocks survive the blockDuration expiry check */
+  permanent?: boolean;
 }
 
 export class BlockList {
@@ -206,13 +267,27 @@ export class BlockList {
     this.blockDuration = blockDurationSeconds;
   }
 
+  /** Temporary block — expires after blockDurationSeconds. */
   block(ip: string, reason: string): void {
     this.blocked.set(ip, { blockedAt: Math.floor(Date.now() / 1000), reason });
   }
 
-  isBlocked(ip: string): { blocked: boolean; reason?: string } {
+  /** Permanent block — never expires automatically. */
+  permanentBlock(ip: string, reason: string): void {
+    this.blocked.set(ip, {
+      blockedAt: Math.floor(Date.now() / 1000),
+      reason,
+      permanent: true,
+    });
+  }
+
+  isBlocked(ip: string): { blocked: boolean; reason?: string; permanent?: boolean } {
     const record = this.blocked.get(ip);
     if (!record) return { blocked: false };
+
+    if (record.permanent) {
+      return { blocked: true, reason: record.reason, permanent: true };
+    }
 
     const now = Math.floor(Date.now() / 1000);
     if (now - record.blockedAt >= this.blockDuration) {
@@ -223,10 +298,11 @@ export class BlockList {
     return { blocked: true, reason: record.reason };
   }
 
+  /** Purge expired temp blocks (permanent blocks are never removed here). */
   cleanup(): void {
     const now = Math.floor(Date.now() / 1000);
     for (const [ip, record] of this.blocked) {
-      if (now - record.blockedAt >= this.blockDuration) {
+      if (!record.permanent && now - record.blockedAt >= this.blockDuration) {
         this.blocked.delete(ip);
       }
     }
@@ -251,17 +327,20 @@ export class ViolationTracker {
     this.windowSeconds = windowSeconds;
   }
 
-  /** Record a violation. Returns true if the IP should now be auto-blocked. */
-  record(ip: string): boolean {
+  /**
+   * Record a violation. Returns true if the IP should now be auto-blocked.
+   * Pass weight > 1 to count the violation multiple times (e.g., for suspicious IPs).
+   */
+  record(ip: string, weight = 1): boolean {
     const now = Math.floor(Date.now() / 1000);
     const entry = this.violations.get(ip);
 
     if (!entry || now - entry.firstSeen >= this.windowSeconds) {
-      this.violations.set(ip, { count: 1, firstSeen: now });
-      return false;
+      this.violations.set(ip, { count: weight, firstSeen: now });
+      return weight >= this.threshold;
     }
 
-    entry.count += 1;
+    entry.count += weight;
     return entry.count >= this.threshold;
   }
 
@@ -286,12 +365,10 @@ export class ViolationTracker {
 export function isBotUserAgent(ua: string | null | undefined): boolean {
   if (!ua || ua.trim() === '') return true; // empty UA is suspicious
 
-  // Allow known good bots
   for (const pattern of ALLOWED_BOT_PATTERNS) {
     if (pattern.test(ua)) return false;
   }
 
-  // Block known bad bots
   for (const pattern of BOT_UA_PATTERNS) {
     if (pattern.test(ua)) return true;
   }
@@ -300,21 +377,40 @@ export function isBotUserAgent(ua: string | null | undefined): boolean {
 }
 
 /**
- * Returns true if the request has suspicious header characteristics.
- * (Missing Accept, Accept-Language, or Accept-Encoding headers are
- * strong indicators of automated tooling.)
+ * Scores how suspicious a request looks based on missing browser headers.
+ * Real browsers always send Accept, Accept-Language, Accept-Encoding, and
+ * sec-fetch-* on same-origin/cross-origin requests. Automated clients
+ * frequently omit these.
+ *
+ * Score guide:
+ *   0–1 : Normal
+ *   2   : Mildly suspicious (might be a stripped proxy)
+ *   3+  : Likely automated
+ */
+export function scoreSuspicion(headers: {
+  get(name: string): string | null;
+}): number {
+  let score = 0;
+  const ua = headers.get('user-agent') ?? '';
+
+  if (ua.length < 10) score += 2;                          // Implausibly short UA
+  if (!headers.get('accept')) score += 1;                  // Browsers always send Accept
+  if (!headers.get('accept-language')) score += 1;         // Browsers always send Accept-Language
+  if (!headers.get('accept-encoding')) score += 1;         // Browsers always send Accept-Encoding
+  if (!headers.get('sec-fetch-site') &&
+      !headers.get('sec-fetch-mode')) score += 1;          // Headless / plain HTTP client
+
+  return score;
+}
+
+/**
+ * Legacy helper — kept for backward compatibility.
+ * Prefer scoreSuspicion() for fine-grained control.
  */
 export function hasSuspiciousHeaders(headers: {
   get(name: string): string | null;
 }): boolean {
-  const accept = headers.get('accept');
-  const acceptLang = headers.get('accept-language');
-  const acceptEnc = headers.get('accept-encoding');
-
-  // Real browsers always send these
-  if (!accept && !acceptLang && !acceptEnc) return true;
-
-  return false;
+  return scoreSuspicion(headers) >= 3;
 }
 
 /**
@@ -329,12 +425,16 @@ export function isHoneypotPath(
 }
 
 /**
- * Extracts the client IP from standard headers.
+ * Extracts the real client IP from request headers.
+ * Checks Cloudflare, Vercel, and standard proxy headers in priority order.
  */
 export function getClientIp(headers: {
   get(name: string): string | null;
 }): string {
-  // Common proxy headers, in priority order
+  // Cloudflare sets this to the actual client IP (more reliable than x-forwarded-for)
+  const cfIp = headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp.trim();
+
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     const first = forwarded.split(',')[0].trim();
@@ -348,7 +448,7 @@ export function getClientIp(headers: {
 }
 
 // ---------------------------------------------------------------------------
-// Periodic cleanup (runs every 5 minutes to prevent memory leaks)
+// Periodic cleanup (every 5 minutes to prevent memory leaks)
 // ---------------------------------------------------------------------------
 
 let cleanupInterval: ReturnType<typeof setInterval> | null = null;
@@ -365,8 +465,7 @@ export function startCleanup(
     violationTracker.cleanup();
   }, 5 * 60 * 1000);
 
-  // Ensure the interval doesn't prevent process shutdown
   if (typeof cleanupInterval === 'object' && 'unref' in cleanupInterval) {
-    cleanupInterval.unref();
+    (cleanupInterval as { unref(): void }).unref();
   }
 }
